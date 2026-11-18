@@ -1,0 +1,462 @@
+#' Translate a data frame into the synthetic namespace
+#'
+#' Forward translation: takes an `original`-namespace data frame and
+#' returns it renamed and re-labelled to match the synthetic namespace
+#' produced by [mask()]. Use this to run a pipeline (trained on the
+#' synthetic) against the original data without modifying pipeline code.
+#'
+#' Operations applied (in order):
+#'
+#' 1. **Re-apply cleaning and conform decisions**: the legalised names and
+#'    trimmed labels from [clean_table()], then the label merges and type
+#'    changes from [conform_table()] when the clone was built on a
+#'    conformance object.
+#' 2. **Verify integrity** by comparing the NA mask of `original` to the
+#'    SHA-256 fingerprint stored on the recipe (controlled by
+#'    `check_integrity`).
+#' 3. **Drop** every column whose resolved `action` was `"drop"` on the
+#'    roles table `mask()` masked with, in either mode. A linked join key
+#'    of a set is aliased in the clone and is kept.
+#' 4. **Subset and reorder** to the columns the recipe knows about.
+#' 5. **Re-label factors / characters** for any column with a level map
+#'    held by the recipe (i.e., treatment and categorical covariates in
+#'    `collaborate` mode; or treatment in `local` mode with opt-in
+#'    permutation). Unknown non-NA values fail closed.
+#' 6. **Rename columns** per `recipe@column_name_map` when `mask()` was
+#'    called with `alias_names` (otherwise `NULL`, and names are
+#'    unchanged).
+#'
+#' Numeric columns are passed through unchanged: the synthetic-namespace
+#' for numeric columns is the same as the original. NA cells in the input
+#' remain NA in the output (no synthesis is performed here).
+#'
+#' @param original A data frame in the original namespace.
+#' @param rec A `masque_recipe` object (e.g. from `recipe(m)`).
+#' @param check_integrity Logical. When `TRUE` (default), verifies that
+#'   the NA mask of `original` matches the recipe's recorded
+#'   `integrity_fp`. Mismatches error with guidance. Pass `FALSE` to
+#'   bypass when the missingness has legitimately changed since the
+#'   recipe was built.
+#'
+#' @return A data.table in the synthetic namespace, ready for the pipeline.
+#'
+#' @examples
+#' r <- propose_roles(iris)
+#' r$role[r$col == "Sepal.Length"] <- "outcome"
+#' r$role[r$col == "Species"] <- "covariate"
+#' m <- mask(iris, r, mode = "collaborate", seed = 1)
+#' rec <- recipe(m)
+#' iris_in_synth_space <- apply_recipe(iris, rec)
+#' head(iris_in_synth_space)
+#'
+#' @seealso [unmask()], [mask()].
+#' @export
+apply_recipe <- function(original, rec, check_integrity = TRUE) {
+  if (S7::S7_inherits(rec, masque_recipe_set)) {
+    return(.apply_recipe_set(original, rec, check_integrity))
+  }
+  if (!is.data.frame(original)) {
+    cli::cli_abort(
+      "`original` must be a data frame; got {.cls {class(original)[1]}}."
+    )
+  }
+  if (!S7::S7_inherits(rec, masque_recipe)) {
+    cli::cli_abort(
+      "`rec` must be a {.cls masque_recipe} object; got {.cls {class(rec)[1]}}."
+    )
+  }
+  if (!is.logical(check_integrity) || length(check_integrity) != 1L) {
+    cli::cli_abort("`check_integrity` must be a single logical.")
+  }
+
+  # Re-apply the recipe's cleaning (legal names, trimmed whitespace), then the
+  # conform_table() merges and type changes the clone was built on.
+  original <- .apply_cleaning_forward(original, rec@cleaning)
+  # A recipe saved before 0.16.0 has no `conform` property at all.
+  conform <- .prop_or(rec, "conform", NULL)
+  original <- .apply_conform_forward(original, conform)
+
+  dropped <- .recipe_dropped_cols(rec)
+  retained <- setdiff(rec@roles$col, dropped)
+
+  missing_in_orig <- setdiff(retained, names(original))
+  if (length(missing_in_orig)) {
+    cli::cli_abort(c(
+      paste0(
+        "`original` is missing column{?s} required by the recipe: ",
+        "{.field {missing_in_orig}}."
+      ),
+      i = "Was the recipe built from a different schema?"
+    ))
+  }
+
+  if (isTRUE(check_integrity)) {
+    .check_recipe_integrity(original, rec)
+  }
+
+  out <- .cols(original, retained)
+
+  for (col in names(rec@level_maps)) {
+    if (!(col %in% names(out))) next
+    out[[col]] <- .apply_level_map_forward(
+      out[[col]], rec@level_maps[[col]],
+      col = col
+    )
+  }
+
+  if (!is.null(rec@column_name_map)) {
+    cmap <- rec@column_name_map
+    nm <- names(out)
+    hits <- nm %in% names(cmap)
+    nm[hits] <- unname(unlist(cmap[nm[hits]]))
+    names(out) <- nm
+  }
+
+  .as_owned_dt(out)
+}
+
+#' Translate data from the synthetic namespace back to the original
+#'
+#' Inverse of [apply_recipe()]. Accepts a data frame or an atomic vector.
+#' For an atomic factor / character vector with a recipe that holds
+#' multiple level maps, `column` must name which map to invert. Atomic
+#' numeric, integer, logical, and `Date` / `POSIXct` vectors are
+#' returned unchanged (no inverse map applies -- these are pass-through
+#' under [apply_recipe()] too).
+#'
+#' The most common pattern is round-tripping pipeline predictions:
+#'
+#' \preformatted{
+#' fit                 <- my_model(synthetic(m))            # train on synthetic
+#' orig_in_synth_space <- apply_recipe(original, recipe(m)) # forward
+#' preds_synth         <- predict(fit, orig_in_synth_space)
+#' preds_orig          <- unmask(preds_synth, recipe(m))    # inverse
+#' }
+#'
+#' An unknown level (a synthetic alias not in the recipe's map) is an
+#' error; it is never coerced to `NA`.
+#'
+#' @param x A data frame or an atomic vector to translate from
+#'   synthetic-namespace to original-namespace.
+#' @param rec A `masque_recipe` object.
+#' @param column Optional column name. Only consulted for atomic
+#'   factor / character `x` when the recipe holds more than one level
+#'   map. Ignored for atomic numeric / logical / Date-like input
+#'   (pass-through), but if supplied is validated against the recipe's
+#'   known columns.
+#'
+#' @return An object of the same type as `x`, in the original namespace.
+#'
+#' @examples
+#' r <- propose_roles(iris)
+#' r$role[r$col == "Species"] <- "treatment"
+#' m <- mask(iris, r, mode = "collaborate", seed = 1)
+#' synth <- synthetic(m)
+#' rec <- recipe(m)
+#' # round-trip a synthetic-namespace value back to its original label
+#' head(unmask(synth$Species, rec, column = "Species"))
+#'
+#' @seealso [apply_recipe()], [mask()].
+#' @export
+unmask <- function(x, rec, column = NULL) {
+  if (S7::S7_inherits(rec, masque_recipe_set)) {
+    return(.unmask_set(x, rec))
+  }
+  if (!S7::S7_inherits(rec, masque_recipe)) {
+    cli::cli_abort(
+      paste0(
+        "`rec` must be a {.cls masque_recipe} object; ",
+        "got {.cls {class(rec)[1]}}."
+      ),
+      class = c("masque_bad_recipe_refusal", "orchestra_refusal")
+    )
+  }
+
+  if (is.data.frame(x)) {
+    out <- x
+    if (!is.null(rec@column_name_map)) {
+      cmap_inv <- stats::setNames(
+        names(rec@column_name_map),
+        unlist(unname(rec@column_name_map))
+      )
+      nm <- names(out)
+      hits <- nm %in% names(cmap_inv)
+      nm[hits] <- unname(cmap_inv[nm[hits]])
+      names(out) <- nm
+    }
+    for (col in names(rec@level_maps)) {
+      if (!(col %in% names(out))) next
+      out[[col]] <- .apply_level_map_inverse(
+        out[[col]], rec@level_maps[[col]],
+        col = col,
+        target_class = rec@storage_classes[[col]]
+      )
+    }
+    # Restore the original column names last, after the level maps have
+    # matched on the legalised names.
+    if (!is.null(rec@cleaning) && length(rec@cleaning$name_map)) {
+      inv <- stats::setNames(
+        names(rec@cleaning$name_map), unname(rec@cleaning$name_map)
+      )
+      nm <- names(out)
+      hits <- nm %in% names(inv)
+      nm[hits] <- unname(inv[nm[hits]])
+      names(out) <- nm
+    }
+    return(.as_owned_dt(out))
+  }
+
+  if (is.atomic(x) && is.null(dim(x))) {
+    # Numeric, logical and date input passes through, bar a mapped column.
+    numeric_map <- is.numeric(x) && !is.null(column) &&
+      column %in% names(rec@level_maps)
+    if (!is.character(x) && !is.factor(x) && !numeric_map) {
+      if (!is.null(column) && length(rec@roles$col) > 0L &&
+        !(column %in% rec@roles$col)) {
+        cli::cli_abort(c(
+          "Column {.field {column}} is not known to the recipe.",
+          i = "Available columns: {.val {rec@roles$col}}."
+        ), class = c("masque_unknown_column_refusal", "orchestra_refusal"))
+      }
+      return(x)
+    }
+
+    # Categorical atomic: need a level map.
+    if (length(rec@level_maps) == 0L) {
+      cli::cli_abort(c(
+        paste0(
+          "Recipe holds no level maps; cannot unmask a categorical ",
+          "atomic vector."
+        ),
+        i = paste0(
+          "Numeric / logical / Date-like vectors are passed through ",
+          "unchanged."
+        )
+      ), class = c("masque_no_level_map_refusal", "orchestra_refusal"))
+    }
+    if (is.null(column)) {
+      if (length(rec@level_maps) == 1L) {
+        column <- names(rec@level_maps)[1L]
+      } else {
+        cli::cli_abort(c(
+          paste0(
+            "Atomic `x` with multiple level maps in the recipe; ",
+            "please supply {.arg column}."
+          ),
+          i = "Available: {.val {names(rec@level_maps)}}."
+        ), class = c("masque_ambiguous_column_refusal", "orchestra_refusal"))
+      }
+    }
+    if (!(column %in% names(rec@level_maps))) {
+      cli::cli_abort(c(
+        "Column {.field {column}} has no level map in this recipe.",
+        i = "Available: {.val {names(rec@level_maps)}}."
+      ), class = c("masque_column_no_level_map_refusal", "orchestra_refusal"))
+    }
+    return(.apply_level_map_inverse(
+      x, rec@level_maps[[column]],
+      col = column,
+      target_class = rec@storage_classes[[column]]
+    ))
+  }
+
+  cli::cli_abort(
+    "`x` must be a data frame or atomic vector; got {.cls {class(x)[1]}}.",
+    class = c("masque_bad_x_refusal", "orchestra_refusal")
+  )
+}
+
+# Internal: apply a recipe bundle to a named list of original tables. The
+# shared link maps are already on each table's recipe.
+.apply_recipe_set <- function(original, rec, check_integrity) {
+  if (!is.list(original) || is.data.frame(original)) {
+    cli::cli_abort(
+      "`original` must be a named list of tables for a recipe bundle."
+    )
+  }
+  missing <- setdiff(names(rec@recipes), names(original))
+  if (length(missing)) {
+    cli::cli_abort(c(
+      "`original` is missing table{?s} the bundle expects: {.val {missing}}.",
+      i = "Bundle tables: {.val {names(rec@recipes)}}."
+    ))
+  }
+  out <- lapply(names(rec@recipes), function(nm) {
+    apply_recipe(original[[nm]], rec@recipes[[nm]], check_integrity)
+  })
+  stats::setNames(out, names(rec@recipes))
+}
+
+# Internal: unmask a named list of synthetic-namespace tables back to the
+# original namespace via a recipe bundle.
+.unmask_set <- function(x, rec) {
+  if (!is.list(x) || is.data.frame(x)) {
+    cli::cli_abort(
+      "`x` must be a named list of tables for a recipe bundle."
+    )
+  }
+  shared <- intersect(names(x), names(rec@recipes))
+  out <- lapply(shared, function(nm) unmask(x[[nm]], rec@recipes[[nm]]))
+  stats::setNames(out, shared)
+}
+
+# Internal: columns mask() dropped. Recipes from masque 0.5.0 and earlier
+# have no action column; `ignore` was dropped in collaborate mode only. A
+# column with a level map is in the clone (a linked key always is).
+.recipe_dropped_cols <- function(rec) {
+  roles <- rec@roles
+  dropped <- if ("action" %in% names(roles)) {
+    roles$col[roles$action == "drop"]
+  } else if (identical(rec@mode, "collaborate")) {
+    roles$col[roles$role == "ignore"]
+  } else {
+    character()
+  }
+  setdiff(dropped, names(rec@level_maps))
+}
+
+# Internal: maps an original-label to its synthetic-label.
+# Fail-closed: unmapped non-NA values raise an error rather than coerce to NA.
+.apply_level_map_forward <- function(val, map, col = NULL) {
+  if (is.factor(val) || is.character(val) || is.logical(val)) {
+    val_chr <- as.character(val)
+    not_na <- !is.na(val_chr)
+    unmapped <- not_na & !(val_chr %in% names(map))
+    if (any(unmapped)) {
+      .fail_unmapped(
+        unique(val_chr[unmapped]),
+        col = col, direction = "forward"
+      )
+    }
+    new_chr <- ifelse(is.na(val_chr), NA_character_, unname(map[val_chr]))
+    if (is.factor(val)) {
+      factor(new_chr, levels = .clone_levels(map))
+    } else {
+      new_chr
+    }
+  } else if (is.numeric(val)) {
+    # A numeric treatment: aliases are character, a permutation stays numeric.
+    key <- .level_key(val)
+    unmapped <- !is.na(key) & !(key %in% names(map))
+    if (any(unmapped)) {
+      .fail_unmapped(unique(key[unmapped]), col = col, direction = "forward")
+    }
+    new_chr <- unname(map[key])
+    if (!setequal(unname(map), names(map))) {
+      return(new_chr)
+    }
+    .numeric_from_key(new_chr, val)
+  } else {
+    val
+  }
+}
+
+# Internal: numeric values from their exact keys, in the class of `like`.
+.numeric_from_key <- function(key, like) {
+  num <- suppressWarnings(as.numeric(key))
+  if (is.integer(like) || identical(like, "integer")) {
+    return(as.integer(num))
+  }
+  num
+}
+
+# Internal: level order of a relabelled factor in the clone, which must not
+# reveal the map. A permutation keeps the original order; aliases sort.
+.clone_levels <- function(map) {
+  labels <- unname(map)
+  if (setequal(labels, names(map))) {
+    return(names(map))
+  }
+  sort(labels, method = "radix")
+}
+
+# Internal: synthetic-label -> original-label. Fail-closed (see forward).
+.apply_level_map_inverse <- function(val, map, col = NULL,
+                                     target_class = NULL) {
+  inv <- stats::setNames(names(map), unname(map))
+  if (is.factor(val) || is.character(val) || is.logical(val)) {
+    val_chr <- as.character(val)
+    not_na <- !is.na(val_chr)
+    unmapped <- not_na & !(val_chr %in% names(inv))
+    if (any(unmapped)) {
+      .fail_unmapped(
+        unique(val_chr[unmapped]),
+        col = col, direction = "inverse"
+      )
+    }
+    new_chr <- ifelse(is.na(val_chr), NA_character_, unname(inv[val_chr]))
+    if (is_logical_class(target_class)) {
+      return(as_logical_labels(new_chr))
+    }
+    if (is_numeric_class(target_class)) {
+      # A numeric id / column aliased in place was stringified at mask
+      # time; restore the original storage class on the way back.
+      num <- suppressWarnings(as.numeric(new_chr))
+      if ("integer" %in% target_class) {
+        return(as.integer(round(num)))
+      }
+      return(num)
+    }
+    if (is.factor(val)) {
+      factor(new_chr, levels = unname(inv))
+    } else {
+      new_chr
+    }
+  } else if (is.numeric(val)) {
+    key <- .level_key(val)
+    unmapped <- !is.na(key) & !(key %in% names(inv))
+    if (any(unmapped)) {
+      .fail_unmapped(unique(key[unmapped]), col = col, direction = "inverse")
+    }
+    .numeric_from_key(unname(inv[key]), val)
+  } else {
+    val
+  }
+}
+
+is_logical_class <- function(x) {
+  is.character(x) && "logical" %in% x
+}
+
+is_numeric_class <- function(x) {
+  is.character(x) && any(c("numeric", "integer") %in% x)
+}
+
+as_logical_labels <- function(x) {
+  out <- rep(NA, length(x))
+  known <- !is.na(x)
+  out[known & x == "TRUE"] <- TRUE
+  out[known & x == "FALSE"] <- FALSE
+  out
+}
+
+.fail_unmapped <- function(bad, col, direction) {
+  hint <- if (direction == "forward") {
+    "Schema drift, or original levels the recipe has never seen."
+  } else {
+    "Schema drift, or synthetic aliases the recipe has never seen."
+  }
+  bad_preview <- utils::head(bad, 5L)
+  if (is.null(col)) {
+    cli::cli_abort(c(
+      "Value{?s} not in the recipe's level map: {.val {bad_preview}}.",
+      i = paste(hint, "Unknown values are not coerced to NA (fail-closed)."),
+      "*" = paste0(
+        "Rebuild the recipe from a dataset that contains these values, ",
+        "or strip them before retargeting."
+      )
+    ))
+  } else {
+    cli::cli_abort(c(
+      paste0(
+        "{cli::qty(length(bad_preview))}Value{?s} not in the recipe's ",
+        "level map in column {.field {col}}: {.val {bad_preview}}."
+      ),
+      i = paste(hint, "Unknown values are not coerced to NA (fail-closed)."),
+      "*" = paste0(
+        "Rebuild the recipe from a dataset that contains these values, ",
+        "or strip them before retargeting."
+      )
+    ))
+  }
+}

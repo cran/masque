@@ -1,0 +1,497 @@
+#' Mask a dataset end to end with one guided call
+#'
+#' The front door. `masque()` walks the whole procedure - read the data,
+#' propose column roles, (in an interactive session) pause for you to
+#' review the plan, mask, audit, and optionally write the result - from a
+#' single call. It dispatches on the input: a single file or data frame
+#' goes through [mask()]; a folder, an Excel workbook, or a named list of
+#' tables goes through [mask_set()].
+#'
+#' It is also fully scriptable. Pass an edited `roles` table (or named
+#' list of them) to skip the interactive review, and an `out` path to
+#' write the masked result in one go. The returned object is the same
+#' `masque` / `masque_set` you would get from the lower-level verbs, so
+#' anything you can do with those you can do with the result here.
+#'
+#' @section The guided flow:
+#'
+#' 1. **Read** the input into one or more clean rectangular tables.
+#' 2. **Propose roles** for every column (skipped if you pass `roles`).
+#' 3. **Review** - in an interactive session with no `roles` supplied,
+#'    the proposed plan is printed and you are asked to proceed, edit, or
+#'    stop. Editing opens the roles table in the spreadsheet editor
+#'    ([utils::edit()]) where the platform provides one; when it cannot
+#'    start (for example macOS without XQuartz, or a headless session), a
+#'    console editor takes over - pick a column, then a role and an
+#'    action from numbered menus, with every change applied through
+#'    [set_role()] so default actions re-resolve exactly as on the
+#'    scriptable path. With `ask = FALSE` (the default in
+#'    non-interactive use) the proposed plan is used as-is, with a note.
+#' 4. **Mask** the data in the chosen `mode`.
+#' 5. **Audit** - in `collaborate` mode the leakage audit runs and its
+#'    headline is printed. A HIGH finding surfaces as a classed warning
+#'    (`masque_high_leakage`) - it is never silenced by the guided flow.
+#' 6. **Write** - if `out` is set, the masked data is written there
+#'    (mirroring the input format), *unless* the audit left unresolved
+#'    HIGH findings: then the write is refused (nothing is written) and
+#'    the flagged columns are listed. Resolve them and mask again, or
+#'    pass `allow_high = TRUE` after your own review - the override is
+#'    warned (`masque_high_override`) and recorded on the recipe. The
+#'    private recipe is never written automatically; persist it yourself
+#'    with [save_recipe()].
+#'
+#' @param input A data frame, a single tabular file (`.csv` / `.tsv` /
+#'   `.fst`), a folder of such files, an Excel workbook, or a named list
+#'   of data frames.
+#' @param roles Optional. A roles table (single-table input) or named
+#'   list of roles tables (set input). When supplied, the interactive
+#'   review is skipped.
+#' @param out Optional output path. For a single table, a `.csv` file (or
+#'   `.xlsx` with `writexl`). For a set, a folder (one CSV per table) or
+#'   an `.xlsx` workbook. When `NULL` (default) nothing is written.
+#' @param mode Either `"local"` or `"collaborate"`. `"local"` makes an
+#'   owner-only development copy (real labels may remain); `"collaborate"`
+#'   makes a copy meant to be shared, with labels aliased, numbers jittered,
+#'   free text dropped and the leakage audit run. When omitted and `roles`
+#'   are supplied, the mode the roles were proposed for is used, exactly as
+#'   in [mask()] and [mask_set()]; with no `roles`, the proposal is made for
+#'   `"local"`.
+#' @param seed Optional integer for reproducibility.
+#' @param clean Hygiene mode passed to [clean_table()] (`"auto"`,
+#'   `"report"`, `"off"`).
+#' @param alias_names Hide column names; see [mask()] / [mask_set()].
+#' @param conditional Logical scalar (default `FALSE`). The conditional
+#'   clone mode passed through to [mask()] / [mask_set()]: when `TRUE`,
+#'   numeric columns are re-simulated within each treatment-by-design
+#'   stratum so the treatment-to-outcome relationship survives the clone.
+#'   See [mask()] for the full account.
+#' @param ladder Drop order of the conditioning ladder, `"hierarchy"` (default)
+#'   or `"levels"`; passed through to [mask()] / [mask_set()].
+#' @param ask Whether to pause for interactive review when `roles` is not
+#'   supplied. Defaults to [interactive()]. Set `FALSE` to proceed with
+#'   the proposed plan without prompting.
+#' @param overwrite Passed to the writer when `out` is set.
+#' @param quiet Suppress progress messages. Warnings - including the
+#'   HIGH-leakage finding - are never suppressed.
+#' @param allow_high Logical (default `FALSE`). When `out` is set and
+#'   the collaborate-mode audit flagged HIGH leakage, the write is
+#'   refused. Pass `TRUE` to write anyway after your own review; the
+#'   override raises a `masque_high_override` warning and is recorded in
+#'   the recipe's warnings, so the exception stays auditable.
+#' @param detect Logical (default `TRUE`). Passed to [propose_roles()] when
+#'   roles are proposed: `FALSE` skips design detection and proposes from
+#'   column names and types alone.
+#' @param sheets For an Excel workbook, the sheets to read (default: all).
+#'   See [mask_set()].
+#' @param info For a set, names of documentation tables to set aside: not
+#'   masked and not written. See [mask_set()].
+#' @param ... Further arguments for the masking verb: [mask()] for one
+#'   table (for example `coords`, `events`, `allow_unmasked_coords`,
+#'   `grain`), [mask_set()] for a set (for example `links`, `grain`). An argument the verb
+#'   does not take is refused (`masque_unused_arg_refusal`).
+#'
+#' @return A `masque` object (single-table input) or a `masque_set`
+#'   object (set input), invisibly. Use [synthetic()] and [recipe()].
+#'
+#' @examples
+#' # Scripted single-table use (no prompt because roles are supplied):
+#' r <- propose_roles(iris)
+#' r <- set_role(r, "Sepal.Length", role = "outcome")
+#' m <- masque(iris, roles = r, seed = 1, ask = FALSE, quiet = TRUE)
+#' head(synthetic(m))
+#'
+#' @seealso [mask()], [mask_set()], [propose_roles()], [set_role()],
+#'   [apply_recipe()] and [unmask()] for the round trip, [save_recipe()] to
+#'   keep the recipe, [audit_mask()], [data_card()] and [roles()] to describe
+#'   the clone, [write_set()].
+#' @export
+masque <- function(input,
+                   roles = NULL,
+                   out = NULL,
+                   mode = c("local", "collaborate"),
+                   seed = NULL,
+                   clean = c("auto", "report", "off"),
+                   alias_names = FALSE,
+                   conditional = FALSE,
+                   ladder = c("hierarchy", "levels"),
+                   ask = interactive(),
+                   overwrite = FALSE,
+                   quiet = FALSE,
+                   allow_high = FALSE,
+                   detect = TRUE,
+                   sheets = NULL,
+                   info = NULL,
+                   ...) {
+  # NULL: let the verb inherit the mode of the supplied roles.
+  mode <- if (missing(mode)) NULL else match.arg(mode)
+  clean <- match.arg(clean)
+  ladder <- match.arg(ladder)
+
+  is_set <- .masque_is_set(input)
+  if (!is_set && (!is.null(sheets) || !is.null(info))) {
+    cli::cli_abort(c(
+      "{.arg sheets} and {.arg info} apply to a workbook, folder or list.",
+      i = "A single table has no sheets or tables to set aside."
+    ), class = c("masque_bad_info_refusal", "orchestra_refusal"))
+  }
+
+  if (is_set) {
+    m <- .masque_guided_set(
+      input, roles, mode, seed, clean, alias_names, conditional, ladder,
+      ask, quiet, detect, sheets, info, ...
+    )
+  } else {
+    m <- .masque_guided_one(
+      input, roles, mode, seed, clean, alias_names, conditional, ladder,
+      ask, quiet, detect, ...
+    )
+  }
+
+  if (!is.null(out)) {
+    m <- .masque_write(m, out, overwrite, quiet, allow_high)
+  }
+  if (!quiet) .masque_summary(m)
+  invisible(m)
+}
+
+# A set is a folder, an Excel workbook, or a named list of data frames.
+# A single data frame or a single tabular file is one table.
+.masque_is_set <- function(input) {
+  if (is.data.frame(input) || inherits(input, "masque_conformance")) {
+    return(FALSE)
+  }
+  if (is.list(input)) {
+    return(TRUE)
+  }
+  if (is.character(input) && length(input) == 1L) {
+    if (dir.exists(input)) {
+      return(TRUE)
+    }
+    if (file.exists(input)) {
+      return(tolower(tools::file_ext(input)) %in% c("xlsx", "xls"))
+    }
+    cli::cli_abort("No file or folder at {.file {input}}.")
+  }
+  cli::cli_abort(paste0(
+    "`input` must be a data frame, a tabular file, a folder, an Excel ",
+    "workbook, or a named list of data frames."
+  ))
+}
+
+# Call a masking verb with `mode` only when one was chosen, so the verb's own
+# inheritance from the roles applies otherwise.
+.with_mode <- function(verb, mode, ...) {
+  if (is.null(mode)) verb(...) else verb(..., mode = mode)
+}
+
+.masque_guided_one <- function(input, roles, mode, seed, clean,
+                               alias_names, conditional, ladder, ask, quiet,
+                               detect, ...) {
+  df <- if (is.data.frame(input) || inherits(input, "masque_conformance")) {
+    input
+  } else {
+    .read_one_file(input)
+  }
+  if (is.null(roles)) {
+    tab <- if (inherits(df, "masque_conformance")) df$data else df
+    roles <- propose_roles(tab, mode = mode %||% "local", detect = detect)
+    roles <- .masque_review(roles, ask, quiet, label = NULL)
+  }
+  .with_mode(
+    mask, mode, df, roles, seed = seed, clean = clean,
+    alias_names = alias_names, conditional = conditional, ladder = ladder,
+    ...
+  )
+}
+
+.masque_guided_set <- function(input, roles, mode, seed, clean,
+                               alias_names, conditional, ladder, ask, quiet,
+                               detect, sheets, info, ...) {
+  if (is.null(roles)) {
+    # Propose on the names mask_set() will mask under. It cleans again and
+    # raises the rename warning once, so the warning is held back here.
+    split <- .split_conformance(input)
+    tables <- read_set(split$input, sheets = sheets)
+    to_mask <- setdiff(names(tables), info)
+    roles <- lapply(to_mask, function(nm) {
+      cl <- withCallingHandlers(
+        clean_table(tables[[nm]], clean = clean, quiet = TRUE),
+        masque_name_repaired = function(w) invokeRestart("muffleWarning")
+      )
+      r <- propose_roles(cl$data, mode = mode %||% "local", detect = detect)
+      .masque_review(r, ask, quiet, label = nm)
+    })
+    names(roles) <- to_mask
+    tables[names(split$conformed)] <- split$conformed
+    # Read once: the tables go on, not the path.
+    input <- tables
+    sheets <- NULL
+  }
+
+  .with_mode(
+    mask_set, mode, input, roles = roles, seed = seed, clean = clean,
+    alias_names = alias_names, conditional = conditional, ladder = ladder,
+    quiet = quiet, sheets = sheets, info = info, ...
+  )
+}
+
+# Interactive review of one proposed roles table. In a non-interactive
+# session, or with ask = FALSE, the plan is used as-is.
+.masque_review <- function(roles, ask, quiet, label) {
+  if (!isTRUE(ask) || !interactive()) {
+    if (!quiet) {
+      where <- if (is.null(label)) "" else sprintf(" for {.field {label}}")
+      how <- if (isTRUE(ask)) {
+        paste0(
+          " ({.code ask = TRUE} needs an interactive session; pass ",
+          "{.arg roles} to review the plan in a script)."
+        )
+      } else {
+        " (pass {.arg roles} or set {.code ask = TRUE} to review)."
+      }
+      cli::cli_alert_info(paste0("Using the proposed masking plan", where, how))
+    }
+    return(roles)
+  }
+
+  hdr <- if (is.null(label)) {
+    "Proposed masking plan"
+  } else {
+    sprintf("Proposed masking plan - table '%s'", label)
+  }
+  cli::cli_h2(hdr)
+  cli::cli_verbatim(utils::capture.output(print(roles[, intersect(
+    c("col", "role", "action", "kind"), names(roles)
+  )])))
+
+  repeat {
+    ans <- tolower(trimws(readline(
+      "Proceed [p], edit roles [e], or quit [q]? "
+    )))
+    # Accept "[e]" for "e" - the bracketed prompt notation invites it.
+    ans <- gsub("^\\[|\\]$", "", ans)
+    if (ans %in% c("", "p", "proceed", "y", "yes")) {
+      return(roles)
+    }
+    if (ans %in% c("e", "edit")) {
+      roles <- .masque_edit(roles)
+      cli::cli_alert_success("Roles updated.")
+      cli::cli_verbatim(utils::capture.output(print(roles[, intersect(
+        c("col", "role", "action", "kind"), names(roles)
+      )])))
+      next
+    }
+    if (ans %in% c("q", "quit")) {
+      cli::cli_abort("Stopped at user request.", call = NULL)
+    }
+    cli::cli_alert_warning("Please answer p, e, or q.")
+  }
+}
+
+# The spreadsheet editor where available, else the console editor. An editor
+# failure returns to the review loop with the proposal intact.
+.masque_edit <- function(roles) {
+  edited <- tryCatch(.masque_edit_gui(roles), error = function(e) e)
+  if (inherits(edited, "error")) {
+    cli::cli_alert_warning(
+      "The spreadsheet editor is unavailable: {conditionMessage(edited)}"
+    )
+    cli::cli_alert_info("Switching to the console editor.")
+    return(.masque_edit_console(roles))
+  }
+  # Preserve the provenance attributes utils::edit() drops.
+  for (a in c("mode", "proposed_actions", "design")) {
+    if (is.null(attr(edited, a))) attr(edited, a) <- attr(roles, a)
+  }
+  data.table::as.data.table(edited)
+}
+
+# Thin indirection so tests can simulate editor failure and edits.
+.masque_edit_gui <- function(roles) {
+  utils::edit(as.data.frame(roles))
+}
+
+# Console editor: pick a column, then a role and action from numbered menus.
+# Every change goes through set_role(). Blank input finishes.
+.masque_edit_console <- function(roles) {
+  repeat {
+    shown <- roles[, intersect(c("col", "role", "action", "kind"),
+      names(roles)
+    )]
+    cli::cli_verbatim(utils::capture.output(print(shown)))
+    ans <- trimws(.masque_readline(
+      "Column to edit (name or row number; blank when done): "
+    ))
+    if (!nzchar(ans)) {
+      return(roles)
+    }
+    col <- .masque_resolve_col(ans, roles$col)
+    if (is.null(col)) {
+      cli::cli_alert_warning(
+        "No column {.val {ans}} - enter a listed name or its row number."
+      )
+      next
+    }
+    i <- match(col, roles$col)
+    cur_action <- if ("action" %in% names(roles)) roles$action[i] else NA
+    role <- .masque_pick("role", roles$role[i], .roles_vocab())
+    action <- .masque_pick("action", cur_action, .actions_vocab())
+    if (is.null(role) && is.null(action)) {
+      cli::cli_alert_info("{.field {col}} unchanged.")
+      next
+    }
+    args <- list(roles = roles, cols = col)
+    if (!is.null(role)) args$role <- role
+    if (!is.null(action)) args$action <- action
+    roles <- do.call(set_role, args)
+    cli::cli_alert_success("{.field {col}} updated.")
+  }
+}
+
+# A column reference typed at the console: a row number or an exact name.
+.masque_resolve_col <- function(ans, cols) {
+  n <- suppressWarnings(as.integer(ans))
+  if (!is.na(n)) {
+    if (n >= 1L && n <= length(cols)) {
+      return(cols[[n]])
+    }
+    return(NULL)
+  }
+  if (ans %in% cols) {
+    return(ans)
+  }
+  NULL
+}
+
+# Numbered single-choice prompt; blank (or an invalid entry) keeps the
+# current value and returns NULL.
+.masque_pick <- function(what, current, vocab) {
+  cli::cli_verbatim(sprintf(
+    "  %s: %s", what,
+    paste(sprintf("[%d] %s", seq_along(vocab), vocab), collapse = "  ")
+  ))
+  ans <- trimws(.masque_readline(sprintf(
+    "New %s (number or name; blank keeps \"%s\"): ", what, current
+  )))
+  if (!nzchar(ans)) {
+    return(NULL)
+  }
+  n <- suppressWarnings(as.integer(ans))
+  if (!is.na(n) && n >= 1L && n <= length(vocab)) {
+    return(vocab[[n]])
+  }
+  if (ans %in% vocab) {
+    return(ans)
+  }
+  cli::cli_alert_warning(
+    "{.val {ans}} is not a valid {what}; keeping {.val {current}}."
+  )
+  NULL
+}
+
+# readline() indirection so the console editor is testable.
+.masque_readline <- function(prompt) {
+  readline(prompt)
+}
+
+.masque_write <- function(m, out, overwrite, quiet, allow_high = FALSE) {
+  # Safety gate: abort on unresolved HIGH findings; allow_high = TRUE warns
+  # and records the override on the recipe.
+  overridden <- .gate_release(m, allow_high)
+  m <- .record_override(m, overridden)
+  if (S7::S7_inherits(m, masque_set)) {
+    .write_set_dispatch(m@synthetic, out, overwrite)
+  } else {
+    .write_one(synthetic(m), out, overwrite)
+  }
+  if (!quiet) cli::cli_alert_success("Wrote masked output to {.file {out}}.")
+  m
+}
+
+# Single-table writer: .xlsx via writexl, otherwise a CSV via fwrite.
+.write_one <- function(df, out, overwrite) {
+  if (file.exists(out) && !overwrite) {
+    cli::cli_abort(c(
+      "{.file {out}} already exists.",
+      i = "Pass {.code overwrite = TRUE} to replace it."
+    ))
+  }
+  if (grepl("\\.xlsx$", out, ignore.case = TRUE)) {
+    if (!requireNamespace("writexl", quietly = TRUE)) {
+      cli::cli_abort("Writing {.file {out}} needs {.pkg writexl}.")
+    }
+    writexl::write_xlsx(df, path = out)
+  } else {
+    data.table::fwrite(df, out)
+  }
+}
+
+.masque_summary <- function(m) {
+  # Count every column of the plan, as the audit does, and name the dropped.
+  if (S7::S7_inherits(m, masque_set)) {
+    recs <- m@recipe@recipes
+    n <- length(recs)
+    n_cols <- sum(vapply(recs, function(r) nrow(r@roles), integer(1L)))
+    dropped <- unlist(lapply(names(recs), function(nm) {
+      cols <- .recipe_dropped_cols(recs[[nm]])
+      if (length(cols)) paste0(nm, ":", cols) else character()
+    }))
+    info <- m@recipe@info
+    headline <- paste0(
+      "Masked {n} table{?s} ({n_cols} column{?s}) in {.val {m@mode}} mode"
+    )
+  } else {
+    n_cols <- nrow(recipe(m)@roles)
+    dropped <- .recipe_dropped_cols(recipe(m))
+    info <- character()
+    headline <- "Masked {n_cols} column{?s} in {.val {m@mode}} mode"
+  }
+
+  status <- .release_status(m)
+  tally <- .audit_tally(m)
+  if (!is.null(tally)) {
+    cli::cli_alert_success(paste0(
+      headline,
+      sprintf(
+        " - audit: %d HIGH, %d medium, %d low.",
+        tally[["high"]], tally[["medium"]], tally[["low"]]
+      )
+    ))
+  } else {
+    cli::cli_alert_success(paste0(headline, "."))
+  }
+  if (length(dropped)) {
+    cli::cli_alert_info(
+      "{length(dropped)} dropped, not in the clone: {.field {dropped}}."
+    )
+  }
+  if (length(info)) {
+    cli::cli_alert_info(
+      "Set aside, not masked and not written: {.val {info}}."
+    )
+  }
+
+  if (identical(status, "blocked")) {
+    flagged <- paste(.audit_high_cols(m), collapse = ", ")
+    cli::cli_alert_danger(
+      "BLOCKED: unresolved HIGH leakage on {flagged}."
+    )
+    cli::cli_alert_info(
+      "Next: re-role, alias, or drop each flagged column, then mask again."
+    )
+    return(invisible(m))
+  }
+
+  if (identical(m@mode, "collaborate")) {
+    cli::cli_alert_info(paste0(
+      "Recipe is private - keep it. Review {.code audit_mask(m)} before ",
+      "any release decision; masque informs that decision, it does not ",
+      "make it."
+    ))
+  } else {
+    cli::cli_alert_info(
+      "Local development copy - owner use only, not for external sharing."
+    )
+  }
+  invisible(m)
+}

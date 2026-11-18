@@ -1,0 +1,180 @@
+#' Internal: the masque_recipe S7 class
+#'
+#' Runtime-minimal by default: stores translation maps, role assignments,
+#' factor metadata, integrity fingerprint, and warnings. Does NOT store
+#' simulator state (Sigma, raw observed margins) unless extended at save
+#' time via `include_simulator = TRUE` (build-order step 5).
+#'
+#' Print methods (defined in R/recipe_print.R) redact `level_maps` by
+#' default. Use `reveal_maps()` for an explicit, audited reveal.
+#'
+#' Not exported. Constructed only via `mask()`.
+#'
+#' @keywords internal
+#' @noRd
+masque_recipe <- S7::new_class(
+  "masque_recipe",
+  properties = list(
+    masque_version = S7::class_character,
+    created_at = S7::class_POSIXct,
+    mode = S7::class_character,
+    seed = S7::new_property(
+      class   = S7::new_union(S7::class_integer, NULL),
+      default = NULL
+    ),
+    roles = S7::class_data.frame,
+    conditional = S7::new_property(
+      class   = S7::class_logical, default = FALSE
+    ),
+    # Which ladder ordered the coarsening. A recipe written before 0.13.0
+    # has no such record and was made with the "levels" ladder.
+    ladder = S7::new_property(
+      class = S7::class_character, default = "levels"
+    ),
+    conditioning_cols = S7::new_property(
+      class = S7::class_character, default = character()
+    ),
+    # The ladder rung actually used; shorter than `conditioning_cols` when the
+    # ladder coarsened. Absent before 0.11.1.
+    conditioning_used = S7::new_property(
+      class = S7::class_character, default = character()
+    ),
+    # Columns the ladder dropped, in order, and those carried as an additive
+    # shift (hierarchy ladder only). Both absent before 0.13.0.
+    conditioning_dropped = S7::new_property(
+      class = S7::class_character, default = character()
+    ),
+    conditioning_shifted = S7::new_property(
+      class = S7::class_character, default = character()
+    ),
+    # Fraction of rows pooled into the fallback stratum: 0 all conditioned,
+    # 1 the marginal clone, NA when the clone was not conditional.
+    fallback_frac = S7::new_property(
+      class = S7::class_double, default = NA_real_
+    ),
+    column_name_map = S7::new_property(
+      class   = S7::new_union(S7::class_list, NULL),
+      default = NULL
+    ),
+    level_maps = S7::new_property(class = S7::class_list, default = list()),
+    storage_classes = S7::new_property(
+      class = S7::class_list, default = list()
+    ),
+    factor_meta = S7::new_property(class = S7::class_list, default = list()),
+    cleaning = S7::new_property(
+      class   = S7::new_union(S7::class_list, NULL),
+      default = NULL
+    ),
+    # conform_table() decisions (merge map, type changes, modes, max_levels);
+    # NULL unless mask() was given a conformance object. Absent before 0.16.0.
+    conform = S7::new_property(
+      class   = S7::new_union(S7::class_list, NULL),
+      default = NULL
+    ),
+    # One entry per declared coordinate pair: jitter parameters, site grouping
+    # and site count. Empty before 0.10.0.
+    coords = S7::new_property(class = S7::class_list, default = list()),
+    # One entry per linked-event spec: columns, stratification, pattern count
+    # and the small patterns that were pooled. Empty before 0.16.0.
+    events = S7::new_property(class = S7::class_list, default = list()),
+    # One entry per design unit holding grained columns; see .detect_grain().
+    grain = S7::new_property(class = S7::class_list, default = list()),
+    # TRUE when the caller deliberately wrote a real coordinate through
+    # unmasked. FALSE, and absent on a recipe written before 0.11.0.
+    allow_unmasked_coords = S7::new_property(
+      class = S7::class_logical, default = FALSE
+    ),
+    # TRUE when a kept outcome was allowed; absent before 0.16.0.
+    allow_kept_outcome = S7::new_property(
+      class = S7::class_logical, default = FALSE
+    ),
+    warnings = S7::new_property(
+      class = S7::class_character, default = character()
+    ),
+    integrity_fp = S7::class_character
+  )
+)
+
+#' Internal: the masque S7 class
+#'
+#' Container returned by [mask()]. Holds the synthetic data frame, the
+#' (private) recipe, the resolved mode, and (post step 6) the audit
+#' data.table. Users interact via the accessors [synthetic()] and [recipe()];
+#' the S7 class itself is intentionally not exported.
+#'
+#' @keywords internal
+#' @noRd
+masque_obj <- S7::new_class(
+  "masque",
+  properties = list(
+    synthetic = S7::class_data.frame,
+    recipe = masque_recipe,
+    mode = S7::class_character,
+    audit = S7::new_property(
+      class   = S7::new_union(S7::class_data.frame, NULL),
+      default = NULL
+    )
+  )
+)
+
+#' Extract the synthetic data from a masque object
+#'
+#' @param m A `masque` object from [mask()], or a `masque_set` from
+#'   [mask_set()].
+#' @return For a `masque`, a data.table (the synthetic table); for a
+#'   `masque_set`, a named list of synthetic tables.
+#' @examples
+#' r <- propose_roles(iris)
+#' r$role[r$col == "Sepal.Length"] <- "outcome"
+#' m <- mask(iris, r, seed = 1)
+#' head(synthetic(m))
+#' @seealso [recipe()], [mask()], [mask_set()].
+#' @export
+synthetic <- function(m) {
+  # A copy, so that editing the result by reference (`:=`) leaves `m` intact.
+  if (S7::S7_inherits(m, masque_set)) {
+    return(lapply(m@synthetic, data.table::copy))
+  }
+  if (!S7::S7_inherits(m, masque_obj)) {
+    cli::cli_abort(
+      paste0(
+        "`m` must be a {.cls masque} or {.cls masque_set} object; got ",
+        "{.cls {class(m)[1]}}."
+      ),
+      class = c("masque_bad_masque_obj_refusal", "orchestra_refusal")
+    )
+  }
+  data.table::copy(m@synthetic)
+}
+
+#' Extract the recipe from a masque object
+#'
+#' The recipe is **private**: at least as sensitive as the original data.
+#' Never share alongside the synthetic. By default `print(recipe(m))`
+#' redacts all level maps; use [reveal_maps()] for an explicit reveal.
+#'
+#' @param m A `masque` object from [mask()], or a `masque_set` from
+#'   [mask_set()].
+#' @return A `masque_recipe`, or for a set a `masque_recipe_set` bundle.
+#' @examples
+#' r <- propose_roles(iris)
+#' r$role[r$col == "Sepal.Length"] <- "outcome"
+#' m <- mask(iris, r, seed = 1)
+#' recipe(m)
+#' @seealso [synthetic()], [reveal_maps()], [mask()], [mask_set()].
+#' @export
+recipe <- function(m) {
+  if (S7::S7_inherits(m, masque_set)) {
+    return(m@recipe)
+  }
+  if (!S7::S7_inherits(m, masque_obj)) {
+    cli::cli_abort(
+      paste0(
+        "`m` must be a {.cls masque} or {.cls masque_set} object; got ",
+        "{.cls {class(m)[1]}}."
+      ),
+      class = c("masque_bad_masque_obj_refusal", "orchestra_refusal")
+    )
+  }
+  m@recipe
+}

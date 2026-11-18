@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Getting started with masque</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Getting started with masque</h1>
+
+
+
+<!-- Render time: ~2 s under rmarkdown::render(); macOS arm64, R 4.5.2, one
+     core. No sampler runs in this vignette, so the time is dominated by
+     knitr overhead and the small copula fits. -->
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(masque)</span></code></pre></div>
+<div id="why" class="section level2">
+<h2>Why</h2>
+<p>A field agronomist has a confidential 72-plot trial and wants an
+outside statistician to build a spatial yield model on it, without the
+statistician seeing the real plot layout or genotype identities. This
+vignette shows the agronomist’s side of that handoff on the John and
+Williams (1995) alpha-design trial shipped with the package.</p>
+<p>The synthetic table <code>masque</code> produces is a development
+surrogate for one named collaborator. It is not an anonymised dataset
+and is not safe for public release. <em>Confidentiality and the threat
+model</em> sets out what is and is not protected; read it before sharing
+any output.</p>
+</div>
+<div id="what" class="section level2">
+<h2>What</h2>
+<p><code>masque()</code> is the main function. Point it at a table, or a
+folder or workbook of related tables, and it reads the data, proposes a
+masking plan and masks. In an interactive session it pauses first so the
+custodian can review the plan.</p>
+<p>The output of <code>masque()</code> is always a pair: the
+<em>synthetic</em> clone, the only part that crosses the trust boundary,
+and a private <code>masque_recipe</code> (see <code>recipe()</code>)
+that never leaves the custodian’s machine. The recipe is what lets a
+pipeline written against the synthetic re-target to the original later
+with no code change; its internals and the round-trip verbs are the
+subject of <em>Recipe anatomy and the round-trip</em>.</p>
+<p>Every column in the masking plan has a <code>role</code> and an
+<code>action</code>, proposed by <code>propose_roles()</code> and
+changed with <code>set_role()</code>. The role says what the column is:
+<code>design</code>, <code>treatment</code>, <code>outcome</code>,
+<code>covariate</code>, <code>date</code>, <code>id</code>,
+<code>text</code> or <code>other</code>. The action says what happens to
+it:</p>
+<ul>
+<li><code>keep</code> passes it through unchanged;</li>
+<li><code>scramble</code> re-simulates numerics through a Gaussian
+copula and shuffles categories and dates between rows. For a treatment
+it swaps the labels among the levels, so the allocation is
+unchanged;</li>
+<li><code>alias</code> replaces the labels with opaque codes (a
+categorical covariate is shuffled between rows first);</li>
+<li><code>drop</code> leaves it out.</li>
+</ul>
+<p><code>role_options()</code> lists every role and action pair the
+package accepts.</p>
+<p>The <code>mode</code> argument sets the defaults for both axes at
+once:</p>
+<ul>
+<li><code>local</code> is for the custodian’s own development and keeps
+labels intact.</li>
+<li><code>collaborate</code> is for handing the synthetic to someone
+else. It aliases treatment and categorical labels, jitters numerics,
+drops identifiers and free text (a character column in which more than
+half the values are distinct), and runs the leakage audit.</li>
+</ul>
+<p>A per-column <code>action</code> always overrides the mode’s
+default.</p>
+</div>
+<div id="example" class="section level2">
+<h2>Example</h2>
+<div id="the-one-call-path" class="section level3">
+<h3>The one-call path</h3>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>f <span class="ot">&lt;-</span> <span class="fu">system.file</span>(<span class="st">&quot;extdata&quot;</span>, <span class="st">&quot;john_alpha.csv&quot;</span>, <span class="at">package =</span> <span class="st">&quot;masque&quot;</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(f, <span class="at">stringsAsFactors =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>  <span class="fu">head</span>(df),</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>  <span class="at">caption =</span> <span class="st">&quot;The first six plots of the alpha-design trial.&quot;</span></span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>)</span></code></pre></div>
+<table>
+<caption>The first six plots of the alpha-design trial.</caption>
+<thead>
+<tr class="header">
+<th align="right">plot</th>
+<th align="left">rep</th>
+<th align="left">block</th>
+<th align="left">gen</th>
+<th align="right">yield</th>
+<th align="right">row</th>
+<th align="right">col</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">1</td>
+<td align="left">R1</td>
+<td align="left">B1</td>
+<td align="left">G11</td>
+<td align="right">4.1172</td>
+<td align="right">1</td>
+<td align="right">1</td>
+</tr>
+<tr class="even">
+<td align="right">2</td>
+<td align="left">R1</td>
+<td align="left">B1</td>
+<td align="left">G04</td>
+<td align="right">4.4461</td>
+<td align="right">2</td>
+<td align="right">1</td>
+</tr>
+<tr class="odd">
+<td align="right">3</td>
+<td align="left">R1</td>
+<td align="left">B1</td>
+<td align="left">G05</td>
+<td align="right">5.8757</td>
+<td align="right">3</td>
+<td align="right">1</td>
+</tr>
+<tr class="even">
+<td align="right">4</td>
+<td align="left">R1</td>
+<td align="left">B1</td>
+<td align="left">G22</td>
+<td align="right">4.5784</td>
+<td align="right">4</td>
+<td align="right">1</td>
+</tr>
+<tr class="odd">
+<td align="right">5</td>
+<td align="left">R1</td>
+<td align="left">B2</td>
+<td align="left">G21</td>
+<td align="right">4.6540</td>
+<td align="right">5</td>
+<td align="right">1</td>
+</tr>
+<tr class="even">
+<td align="right">6</td>
+<td align="left">R1</td>
+<td align="left">B2</td>
+<td align="left">G10</td>
+<td align="right">4.1736</td>
+<td align="right">6</td>
+<td align="right">1</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>m <span class="ot">&lt;-</span> <span class="fu">masque</span>(df, <span class="at">mode =</span> <span class="st">&quot;collaborate&quot;</span>, <span class="at">seed =</span> <span class="dv">1</span><span class="dt">L</span>, <span class="at">ask =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="co">#&gt; ℹ Using the proposed masking plan (pass `roles` or set `ask = TRUE` to review).</span></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="co">#&gt; ✔ Masked 7 columns in &quot;collaborate&quot; mode - audit: 0 HIGH, 0 medium, 7 low.</span></span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="co">#&gt; ℹ Recipe is private - keep it. Review `audit_mask(m)` before any release decision; masque informs that decision, it does not make it.</span></span></code></pre></div>
+<p><code>ask = FALSE</code> skips the interactive review, which is what
+a vignette needs; in an interactive console, <code>masque(df)</code>
+shows the proposed plan and a prompt to proceed, edit, or stop. The
+message above is the summary <code>masque()</code> prints for every
+guided run: how many columns were masked, in which mode, and the
+leakage-audit tally.</p>
+<p>The result carries the synthetic data and the private recipe:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>synth <span class="ot">&lt;-</span> <span class="fu">synthetic</span>(m)</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>  <span class="fu">head</span>(synth),</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>  <span class="at">caption =</span> <span class="fu">paste0</span>(</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>    <span class="st">&quot;The first six plots of the synthetic clone: `gen` is aliased, &quot;</span>,</span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>    <span class="st">&quot;`yield` is re-simulated.&quot;</span></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>  )</span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>)</span></code></pre></div>
+<table>
+<caption>The first six plots of the synthetic clone: <code>gen</code> is
+aliased, <code>yield</code> is re-simulated.</caption>
+<thead>
+<tr class="header">
+<th align="right">plot</th>
+<th align="left">rep</th>
+<th align="left">block</th>
+<th align="left">gen</th>
+<th align="right">yield</th>
+<th align="right">row</th>
+<th align="right">col</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">1</td>
+<td align="left">R1</td>
+<td align="left">B1</td>
+<td align="left">trt_006</td>
+<td align="right">4.150347</td>
+<td align="right">1</td>
+<td align="right">1</td>
+</tr>
+<tr class="even">
+<td align="right">2</td>
+<td align="left">R1</td>
+<td align="left">B1</td>
+<td align="left">trt_001</td>
+<td align="right">4.248434</td>
+<td align="right">2</td>
+<td align="right">1</td>
+</tr>
+<tr class="odd">
+<td align="right">3</td>
+<td align="left">R1</td>
+<td align="left">B1</td>
+<td align="left">trt_019</td>
+<td align="right">4.578376</td>
+<td align="right">3</td>
+<td align="right">1</td>
+</tr>
+<tr class="even">
+<td align="right">4</td>
+<td align="left">R1</td>
+<td align="left">B1</td>
+<td align="left">trt_023</td>
+<td align="right">5.302792</td>
+<td align="right">4</td>
+<td align="right">1</td>
+</tr>
+<tr class="odd">
+<td align="right">5</td>
+<td align="left">R1</td>
+<td align="left">B2</td>
+<td align="left">trt_002</td>
+<td align="right">3.992964</td>
+<td align="right">5</td>
+<td align="right">1</td>
+</tr>
+<tr class="even">
+<td align="right">6</td>
+<td align="left">R1</td>
+<td align="left">B2</td>
+<td align="left">trt_014</td>
+<td align="right">5.255890</td>
+<td align="right">6</td>
+<td align="right">1</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="the-masking-plan-roles-and-actions" class="section level3">
+<h3>The masking plan: roles and actions</h3>
+<p>Under the one-call path, <code>masque()</code> built the roles table
+without asking. Building and reviewing it directly gives full
+control:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>plan <span class="ot">&lt;-</span> <span class="fu">propose_roles</span>(df, <span class="at">mode =</span> <span class="st">&quot;collaborate&quot;</span>)</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>  plan[, <span class="fu">c</span>(<span class="st">&quot;col&quot;</span>, <span class="st">&quot;role&quot;</span>, <span class="st">&quot;action&quot;</span>, <span class="st">&quot;kind&quot;</span>)],</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>  <span class="at">caption =</span> <span class="fu">paste0</span>(</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>    <span class="st">&quot;The proposed masking plan for the alpha-design trial &quot;</span>,</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>    <span class="st">&quot;(collaborate mode).&quot;</span></span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>  )</span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>)</span></code></pre></div>
+<table>
+<caption>The proposed masking plan for the alpha-design trial
+(collaborate mode).</caption>
+<thead>
+<tr class="header">
+<th align="left">col</th>
+<th align="left">role</th>
+<th align="left">action</th>
+<th align="left">kind</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">plot</td>
+<td align="left">design</td>
+<td align="left">keep</td>
+<td align="left">integer</td>
+</tr>
+<tr class="even">
+<td align="left">rep</td>
+<td align="left">design</td>
+<td align="left">keep</td>
+<td align="left">factor</td>
+</tr>
+<tr class="odd">
+<td align="left">block</td>
+<td align="left">design</td>
+<td align="left">keep</td>
+<td align="left">factor</td>
+</tr>
+<tr class="even">
+<td align="left">gen</td>
+<td align="left">treatment</td>
+<td align="left">alias</td>
+<td align="left">factor</td>
+</tr>
+<tr class="odd">
+<td align="left">yield</td>
+<td align="left">outcome</td>
+<td align="left">scramble</td>
+<td align="left">numeric</td>
+</tr>
+<tr class="even">
+<td align="left">row</td>
+<td align="left">design</td>
+<td align="left">keep</td>
+<td align="left">integer</td>
+</tr>
+<tr class="odd">
+<td align="left">col</td>
+<td align="left">design</td>
+<td align="left">keep</td>
+<td align="left">integer</td>
+</tr>
+</tbody>
+</table>
+<p><code>propose_roles()</code> fills in a sensible action for each
+column given the mode, so the table reviewed here is the plan that will
+run. <code>yield</code> was proposed as the trial’s <code>outcome</code>
+from its name. The role records intent, and the <em>conditional</em>
+clone (see <em>Confidentiality and the threat model</em>) reads it to
+find the response. Any role can be changed with <code>set_role()</code>.
+Here the plot number is re-roled as an identifier, which collaborate
+mode drops:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>plan_id <span class="ot">&lt;-</span> <span class="fu">set_role</span>(plan, <span class="st">&quot;plot&quot;</span>, <span class="at">role =</span> <span class="st">&quot;id&quot;</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>  plan_id[, <span class="fu">c</span>(<span class="st">&quot;col&quot;</span>, <span class="st">&quot;role&quot;</span>, <span class="st">&quot;action&quot;</span>)],</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>  <span class="at">caption =</span> <span class="st">&quot;The plan after re-roling `plot` as an identifier.&quot;</span></span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>)</span></code></pre></div>
+<table>
+<caption>The plan after re-roling <code>plot</code> as an
+identifier.</caption>
+<thead>
+<tr class="header">
+<th align="left">col</th>
+<th align="left">role</th>
+<th align="left">action</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">plot</td>
+<td align="left">id</td>
+<td align="left">drop</td>
+</tr>
+<tr class="even">
+<td align="left">rep</td>
+<td align="left">design</td>
+<td align="left">keep</td>
+</tr>
+<tr class="odd">
+<td align="left">block</td>
+<td align="left">design</td>
+<td align="left">keep</td>
+</tr>
+<tr class="even">
+<td align="left">gen</td>
+<td align="left">treatment</td>
+<td align="left">alias</td>
+</tr>
+<tr class="odd">
+<td align="left">yield</td>
+<td align="left">outcome</td>
+<td align="left">scramble</td>
+</tr>
+<tr class="even">
+<td align="left">row</td>
+<td align="left">design</td>
+<td align="left">keep</td>
+</tr>
+<tr class="odd">
+<td align="left">col</td>
+<td align="left">design</td>
+<td align="left">keep</td>
+</tr>
+</tbody>
+</table>
+<p>Re-assigning a role re-resolves the default action; passing an
+explicit <code>action</code> pins the column instead. There is no
+requirement to name an outcome: with none marked, every scrambled
+numeric is re-simulated jointly.</p>
+</div>
+<div id="editing-the-plan-as-code" class="section level3">
+<h3>Editing the plan as code</h3>
+<p>The plan is a data.table, so you can edit it in code. The spreadsheet
+the guided prompt opens when the custodian chooses <code>e</code> edits
+the same table. <code>set_role()</code> is vectorised over columns:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>r2 <span class="ot">&lt;-</span> <span class="fu">set_role</span>(plan, <span class="fu">c</span>(<span class="st">&quot;row&quot;</span>, <span class="st">&quot;col&quot;</span>), <span class="at">action =</span> <span class="st">&quot;drop&quot;</span>)</span></code></pre></div>
+<p>Direct edits work too. A direct <code>role</code> edit leaves
+<code>action</code> untouched, so setting the action back to
+<code>NA</code> tells <code>mask()</code> to re-resolve the default for
+the new role:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>r2[col <span class="sc">==</span> <span class="st">&quot;rep&quot;</span>, <span class="st">`</span><span class="at">:=</span><span class="st">`</span>(<span class="at">role =</span> <span class="st">&quot;covariate&quot;</span>, <span class="at">action =</span> <span class="cn">NA_character_</span>)]</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>  r2[, <span class="fu">c</span>(<span class="st">&quot;col&quot;</span>, <span class="st">&quot;role&quot;</span>, <span class="st">&quot;action&quot;</span>)],</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>  <span class="at">caption =</span> <span class="fu">paste0</span>(</span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>    <span class="st">&quot;A hand-edited plan: `row`/`col` dropped, `rep` re-roled to a &quot;</span>,</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>    <span class="st">&quot;covariate.&quot;</span></span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>  )</span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a>)</span></code></pre></div>
+<table>
+<caption>A hand-edited plan: <code>row</code>/<code>col</code> dropped,
+<code>rep</code> re-roled to a covariate.</caption>
+<thead>
+<tr class="header">
+<th align="left">col</th>
+<th align="left">role</th>
+<th align="left">action</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">plot</td>
+<td align="left">design</td>
+<td align="left">keep</td>
+</tr>
+<tr class="even">
+<td align="left">rep</td>
+<td align="left">covariate</td>
+<td align="left">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">block</td>
+<td align="left">design</td>
+<td align="left">keep</td>
+</tr>
+<tr class="even">
+<td align="left">gen</td>
+<td align="left">treatment</td>
+<td align="left">alias</td>
+</tr>
+<tr class="odd">
+<td align="left">yield</td>
+<td align="left">outcome</td>
+<td align="left">scramble</td>
+</tr>
+<tr class="even">
+<td align="left">row</td>
+<td align="left">design</td>
+<td align="left">drop</td>
+</tr>
+<tr class="odd">
+<td align="left">col</td>
+<td align="left">design</td>
+<td align="left">drop</td>
+</tr>
+</tbody>
+</table>
+<p>The <code>kind</code> column comes from the column’s class and cannot
+be edited. If it is wrong, convert the column in the data and run
+<code>propose_roles()</code> again.</p>
+<p><code>role_options()</code> lists the pairs the package accepts, here
+for a factor column:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>  <span class="fu">role_options</span>(<span class="at">kind =</span> <span class="st">&quot;factor&quot;</span>),</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>  <span class="at">caption =</span> <span class="fu">paste0</span>(</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>    <span class="st">&quot;Every (role, action) pair the validator accepts for a factor &quot;</span>,</span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>    <span class="st">&quot;column.&quot;</span></span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>  )</span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a>)</span></code></pre></div>
+<table>
+<caption>Every (role, action) pair the validator accepts for a factor
+column.</caption>
+<colgroup>
+<col width="3%" />
+<col width="2%" />
+<col width="14%" />
+<col width="79%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">role</th>
+<th align="left">action</th>
+<th align="left">kinds</th>
+<th align="left">notes</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">design</td>
+<td align="left">keep</td>
+<td align="left">all</td>
+<td align="left"></td>
+</tr>
+<tr class="even">
+<td align="left">design</td>
+<td align="left">alias</td>
+<td align="left">factor, character, logical</td>
+<td align="left">design label aliasing requires a factor / character /
+logical column; numeric design columns can only be kept or dropped. To
+hide the labels, convert the column to a factor in the data, re-run
+propose_roles() and set action “alias”, or drop it</td>
+</tr>
+<tr class="odd">
+<td align="left">design</td>
+<td align="left">drop</td>
+<td align="left">all</td>
+<td align="left"></td>
+</tr>
+<tr class="even">
+<td align="left">treatment</td>
+<td align="left">keep</td>
+<td align="left">all</td>
+<td align="left"></td>
+</tr>
+<tr class="odd">
+<td align="left">treatment</td>
+<td align="left">scramble</td>
+<td align="left">numeric, integer, factor, character, logical</td>
+<td align="left">treatment scramble / alias requires a factor /
+character / logical or numeric column</td>
+</tr>
+<tr class="even">
+<td align="left">treatment</td>
+<td align="left">alias</td>
+<td align="left">numeric, integer, factor, character, logical</td>
+<td align="left">treatment scramble / alias requires a factor /
+character / logical or numeric column</td>
+</tr>
+<tr class="odd">
+<td align="left">treatment</td>
+<td align="left">drop</td>
+<td align="left">all</td>
+<td align="left"></td>
+</tr>
+<tr class="even">
+<td align="left">outcome</td>
+<td align="left">keep</td>
+<td align="left">all</td>
+<td align="left"></td>
+</tr>
+<tr class="odd">
+<td align="left">outcome</td>
+<td align="left">drop</td>
+<td align="left">all</td>
+<td align="left"></td>
+</tr>
+<tr class="even">
+<td align="left">covariate</td>
+<td align="left">keep</td>
+<td align="left">all</td>
+<td align="left"></td>
+</tr>
+<tr class="odd">
+<td align="left">covariate</td>
+<td align="left">scramble</td>
+<td align="left">all except other</td>
+<td align="left">columns of an unsupported class can only be kept or
+dropped; masque does not know how to synthesise them</td>
+</tr>
+<tr class="even">
+<td align="left">covariate</td>
+<td align="left">alias</td>
+<td align="left">factor, character, logical</td>
+<td align="left">covariate aliasing requires a factor / character /
+logical column; numeric covariates use scramble</td>
+</tr>
+<tr class="odd">
+<td align="left">covariate</td>
+<td align="left">drop</td>
+<td align="left">all</td>
+<td align="left"></td>
+</tr>
+<tr class="even">
+<td align="left">date</td>
+<td align="left">keep</td>
+<td align="left">all</td>
+<td align="left"></td>
+</tr>
+<tr class="odd">
+<td align="left">date</td>
+<td align="left">drop</td>
+<td align="left">all</td>
+<td align="left"></td>
+</tr>
+<tr class="even">
+<td align="left">id</td>
+<td align="left">keep</td>
+<td align="left">all</td>
+<td align="left"></td>
+</tr>
+<tr class="odd">
+<td align="left">id</td>
+<td align="left">alias</td>
+<td align="left">numeric, integer, factor, character</td>
+<td align="left">id aliasing requires a character, factor, or integer
+column</td>
+</tr>
+<tr class="even">
+<td align="left">id</td>
+<td align="left">drop</td>
+<td align="left">all</td>
+<td align="left"></td>
+</tr>
+<tr class="odd">
+<td align="left">text</td>
+<td align="left">keep</td>
+<td align="left">all</td>
+<td align="left"></td>
+</tr>
+<tr class="even">
+<td align="left">text</td>
+<td align="left">scramble</td>
+<td align="left">all except other</td>
+<td align="left">columns of an unsupported class can only be kept or
+dropped; masque does not know how to synthesise them</td>
+</tr>
+<tr class="odd">
+<td align="left">text</td>
+<td align="left">alias</td>
+<td align="left">factor, character</td>
+<td align="left">text aliasing requires a character or factor
+column</td>
+</tr>
+<tr class="even">
+<td align="left">text</td>
+<td align="left">drop</td>
+<td align="left">all</td>
+<td align="left"></td>
+</tr>
+<tr class="odd">
+<td align="left">other</td>
+<td align="left">keep</td>
+<td align="left">all</td>
+<td align="left"></td>
+</tr>
+<tr class="even">
+<td align="left">other</td>
+<td align="left">drop</td>
+<td align="left">all</td>
+<td align="left"></td>
+</tr>
+</tbody>
+</table>
+<p>Finally, <code>pii_suspected</code>. <code>propose_roles()</code>
+sets it from the column <em>name</em> (<code>email</code>,
+<code>phone</code>, <code>owner</code>, …), and the leakage audit treats
+a flagged column that survives into the synthetic as a HIGH finding. The
+scan reads names, not content, so when a harmlessly named column holds
+sensitive values, flagging it by hand is the correct fix:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>plan[col <span class="sc">==</span> <span class="st">&quot;comments&quot;</span>, pii_suspected <span class="sc">:=</span> <span class="cn">TRUE</span>]</span></code></pre></div>
+<p>Passing the edited table back to <code>mask()</code> (or to
+<code>masque(df, roles = plan)</code>) runs the plan:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a>m <span class="ot">&lt;-</span> <span class="fu">mask</span>(df, plan, <span class="at">mode =</span> <span class="st">&quot;collaborate&quot;</span>, <span class="at">seed =</span> <span class="dv">1</span><span class="dt">L</span>)</span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>synth <span class="ot">&lt;-</span> <span class="fu">synthetic</span>(m)</span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>byte_identical_plot <span class="ot">&lt;-</span> <span class="fu">identical</span>(synth<span class="sc">$</span>plot, df<span class="sc">$</span>plot)</span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a>gen_levels_changed <span class="ot">&lt;-</span> <span class="sc">!</span><span class="fu">setequal</span>(<span class="fu">levels</span>(synth<span class="sc">$</span>gen), <span class="fu">levels</span>(df<span class="sc">$</span>gen))</span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a>byte_identical_plot</span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a>gen_levels_changed</span>
+<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
+<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a><span class="fu">head</span>(<span class="fu">levels</span>(synth<span class="sc">$</span>gen))</span>
+<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a><span class="co">#&gt; [1] &quot;trt_001&quot; &quot;trt_002&quot; &quot;trt_003&quot; &quot;trt_004&quot; &quot;trt_005&quot; &quot;trt_006&quot;</span></span></code></pre></div>
+</div>
+<div id="a-plan-the-package-refuses" class="section level3">
+<h3>A plan the package refuses</h3>
+<p><code>plot</code> is a <code>design</code> column. Scrambling it
+would break the trial’s layout, and <code>mask()</code> refuses:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>bad_plan <span class="ot">&lt;-</span> <span class="fu">set_role</span>(plan, <span class="st">&quot;plot&quot;</span>, <span class="at">role =</span> <span class="st">&quot;design&quot;</span>, <span class="at">action =</span> <span class="st">&quot;scramble&quot;</span>)</span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="fu">mask</span>(df, bad_plan, <span class="at">mode =</span> <span class="st">&quot;collaborate&quot;</span>, <span class="at">seed =</span> <span class="dv">1</span><span class="dt">L</span>)</span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a><span class="co">#&gt; Error in `roles_validate()`:</span></span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a><span class="co">#&gt; ! Incompatible role, action and kind combination:</span></span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a><span class="co">#&gt; ✖ plot (design + scramble): design columns are structure, not content - they cannot be scrambled;</span></span>
+<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a><span class="co">#&gt;   use keep, alias (labels hidden, structure intact), or drop</span></span></code></pre></div>
+<p>The call stops before any masking, names the column and the
+combination at fault, and lists the three actions that do work for a
+design column (<code>keep</code>, <code>alias</code>,
+<code>drop</code>). The same check runs whether the plan came from
+<code>propose_roles()</code>, a hand edit or the guided spreadsheet.</p>
+</div>
+<div id="more-than-one-table" class="section level3">
+<h3>More than one table</h3>
+<p>A confidential dataset often arrives as several related files or a
+multi-sheet workbook. <code>masque()</code> handles those too. Point it
+at a folder, an <code>.xlsx</code> file, or a named list of tables and
+it masks every table at once, aliasing any shared key (a site code, a
+genotype name) <em>identically across tables</em> so a join of the
+synthetic tables still resolves.</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a>set_dir <span class="ot">&lt;-</span> <span class="fu">system.file</span>(<span class="st">&quot;extdata&quot;</span>, <span class="st">&quot;met_set&quot;</span>, <span class="at">package =</span> <span class="st">&quot;masque&quot;</span>)</span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>ms <span class="ot">&lt;-</span> <span class="fu">masque</span>(set_dir, <span class="at">mode =</span> <span class="st">&quot;collaborate&quot;</span>, <span class="at">seed =</span> <span class="dv">1</span><span class="dt">L</span>, <span class="at">ask =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a><span class="co">#&gt; Warning: Numeric environment column year remains &quot;keep&quot; in collaborate mode.</span></span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a><span class="co">#&gt; ℹ This preserves environment structure but may disclose year or other numeric labels; review before</span></span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a><span class="co">#&gt;   release.</span></span>
+<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a><span class="co">#&gt; ℹ To hide the values, convert the column to a factor in the data and re-run `propose_roles()`,</span></span>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a><span class="co">#&gt;   which proposes &quot;alias&quot; for a categorical environment; or set its action to &quot;drop&quot;.</span></span>
+<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a><span class="co">#&gt; ℹ Using the proposed masking plan for agronomy (pass `roles` or set `ask = TRUE` to review).</span></span>
+<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a><span class="co">#&gt; ℹ Using the proposed masking plan for quality (pass `roles` or set `ask = TRUE` to review).</span></span>
+<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb13-11"><a href="#cb13-11" tabindex="-1"></a><span class="co">#&gt; ── Cross-table links (2) ──</span></span>
+<span id="cb13-12"><a href="#cb13-12" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb13-13"><a href="#cb13-13" tabindex="-1"></a><span class="co">#&gt; • &quot;env&quot; shared across &quot;agronomy, quality&quot; - aliased consistently</span></span>
+<span id="cb13-14"><a href="#cb13-14" tabindex="-1"></a><span class="co">#&gt; • &quot;gen&quot; shared across &quot;agronomy, quality&quot; - aliased consistently</span></span>
+<span id="cb13-15"><a href="#cb13-15" tabindex="-1"></a><span class="co">#&gt; ✔ Masked 2 tables (12 columns) in &quot;collaborate&quot; mode - audit: 0 HIGH, 0 medium, 12 low.</span></span>
+<span id="cb13-16"><a href="#cb13-16" tabindex="-1"></a><span class="co">#&gt; ℹ Recipe is private - keep it. Review `audit_mask(m)` before any release decision; masque informs that decision, it does not make it.</span></span>
+<span id="cb13-17"><a href="#cb13-17" tabindex="-1"></a>ms</span></code></pre></div>
+<pre><code>
+── masque_set ──────────────────────────────────────────────────────────────────────────────────────
+• Mode: collaborate
+• Tables: 2
+• agronomy: 464 rows x 7 columns
+• quality: 464 rows x 5 columns
+
+── Cross-table links (2) ──
+
+• &quot;env&quot; shared across &quot;agronomy, quality&quot;
+• &quot;gen&quot; shared across &quot;agronomy, quality&quot;
+Use `synthetic(m)` for the tables; `recipe(m)` for the bundle.
+
+✖ The recipe bundle is PRIVATE - never share it with the synthetic set.</code></pre>
+<p>The genotype column <code>gen</code> appears in both tables and is
+masked to the same codes in each, so the field and laboratory tables
+still join.</p>
+<p>The warning is about <code>year</code>. It is an environment column,
+but it is numeric, so collaborate mode keeps its real values. To alias
+it, read the tables, convert <code>year</code> to a factor, and mask the
+list:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a>tabs <span class="ot">&lt;-</span> <span class="fu">read_set</span>(set_dir)</span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a>tabs<span class="sc">$</span>agronomy[, year <span class="sc">:=</span> <span class="fu">factor</span>(year)]</span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a>ms <span class="ot">&lt;-</span> <span class="fu">masque</span>(tabs, <span class="at">mode =</span> <span class="st">&quot;collaborate&quot;</span>, <span class="at">seed =</span> <span class="dv">1</span><span class="dt">L</span>, <span class="at">ask =</span> <span class="cn">FALSE</span>, <span class="at">quiet =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(</span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a>  <span class="fu">head</span>(<span class="fu">synthetic</span>(ms)<span class="sc">$</span>agronomy[, <span class="fu">c</span>(<span class="st">&quot;env&quot;</span>, <span class="st">&quot;loc&quot;</span>, <span class="st">&quot;year&quot;</span>, <span class="st">&quot;gen&quot;</span>)], <span class="dv">3</span><span class="dt">L</span>),</span>
+<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a>  <span class="at">caption =</span> <span class="st">&quot;The first rows of the clone, with `year` now aliased.&quot;</span></span>
+<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a>)</span></code></pre></div>
+<table>
+<caption>The first rows of the clone, with <code>year</code> now
+aliased.</caption>
+<thead>
+<tr class="header">
+<th align="left">env</th>
+<th align="left">loc</th>
+<th align="left">year</th>
+<th align="left">gen</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">env_K004</td>
+<td align="left">loc_D002</td>
+<td align="left">year_D001</td>
+<td align="left">gen_K056</td>
+</tr>
+<tr class="even">
+<td align="left">env_K004</td>
+<td align="left">loc_D002</td>
+<td align="left">year_D001</td>
+<td align="left">gen_K048</td>
+</tr>
+<tr class="odd">
+<td align="left">env_K004</td>
+<td align="left">loc_D002</td>
+<td align="left">year_D001</td>
+<td align="left">gen_K017</td>
+</tr>
+</tbody>
+</table>
+<p>For a workbook, <code>sheets =</code> picks which sheets to read, and
+<code>info =</code> names documentation sheets, such as a data
+dictionary, to set aside: they are not masked and not written. See
+<em>Confidentiality and the threat model</em> for the set-level
+controls.</p>
+</div>
+<div id="describing-the-clone-the-data-card" class="section level3">
+<h3>Describing the clone: the data card</h3>
+<p>A collaborator planning an analysis needs to know the shape of the
+data before any code is written: how many rows, which columns are the
+design, which is the outcome, how much is missing.
+<code>data_card()</code> writes those facts down without a single value
+of any column. It reads only the clone and its role table, which
+<code>roles()</code> returns in the clone’s own column names:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(</span>
+<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a>  <span class="fu">roles</span>(m),</span>
+<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a>  <span class="at">caption =</span> <span class="st">&quot;The role table of the clone, as the data card reads it.&quot;</span></span>
+<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a>)</span></code></pre></div>
+<table>
+<caption>The role table of the clone, as the data card reads
+it.</caption>
+<thead>
+<tr class="header">
+<th align="left">col</th>
+<th align="left">role</th>
+<th align="left">action</th>
+<th align="left">kind</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">plot</td>
+<td align="left">design</td>
+<td align="left">keep</td>
+<td align="left">integer</td>
+</tr>
+<tr class="even">
+<td align="left">rep</td>
+<td align="left">design</td>
+<td align="left">keep</td>
+<td align="left">factor</td>
+</tr>
+<tr class="odd">
+<td align="left">block</td>
+<td align="left">design</td>
+<td align="left">keep</td>
+<td align="left">factor</td>
+</tr>
+<tr class="even">
+<td align="left">gen</td>
+<td align="left">treatment</td>
+<td align="left">alias</td>
+<td align="left">factor</td>
+</tr>
+<tr class="odd">
+<td align="left">yield</td>
+<td align="left">outcome</td>
+<td align="left">scramble</td>
+<td align="left">numeric</td>
+</tr>
+<tr class="even">
+<td align="left">row</td>
+<td align="left">design</td>
+<td align="left">keep</td>
+<td align="left">integer</td>
+</tr>
+<tr class="odd">
+<td align="left">col</td>
+<td align="left">design</td>
+<td align="left">keep</td>
+<td align="left">integer</td>
+</tr>
+</tbody>
+</table>
+<p>The role table says which columns are design columns, but not which
+of them give a plot’s position or identify the plot. The custodian names
+those when writing the card:</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a>card_file <span class="ot">&lt;-</span> <span class="fu">tempfile</span>(<span class="at">fileext =</span> <span class="st">&quot;.yaml&quot;</span>)</span>
+<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a>card <span class="ot">&lt;-</span> <span class="fu">data_card</span>(</span>
+<span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a>  m,</span>
+<span id="cb17-4"><a href="#cb17-4" tabindex="-1"></a>  <span class="at">file =</span> card_file,</span>
+<span id="cb17-5"><a href="#cb17-5" tabindex="-1"></a>  <span class="at">name =</span> <span class="st">&quot;alpha_trial&quot;</span>,</span>
+<span id="cb17-6"><a href="#cb17-6" tabindex="-1"></a>  <span class="at">spatial =</span> <span class="fu">c</span>(<span class="st">&quot;row&quot;</span>, <span class="st">&quot;col&quot;</span>),</span>
+<span id="cb17-7"><a href="#cb17-7" tabindex="-1"></a>  <span class="at">unit =</span> <span class="st">&quot;plot&quot;</span></span>
+<span id="cb17-8"><a href="#cb17-8" tabindex="-1"></a>)</span>
+<span id="cb17-9"><a href="#cb17-9" tabindex="-1"></a><span class="fu">writeLines</span>(<span class="fu">head</span>(<span class="fu">readLines</span>(card_file), <span class="dv">30</span>))</span>
+<span id="cb17-10"><a href="#cb17-10" tabindex="-1"></a><span class="co">#&gt; card_version: &quot;0.1&quot;</span></span>
+<span id="cb17-11"><a href="#cb17-11" tabindex="-1"></a><span class="co">#&gt; produced_by:</span></span>
+<span id="cb17-12"><a href="#cb17-12" tabindex="-1"></a><span class="co">#&gt;   package: &quot;masque&quot;</span></span>
+<span id="cb17-13"><a href="#cb17-13" tabindex="-1"></a><span class="co">#&gt;   version: &quot;0.16.0&quot;</span></span>
+<span id="cb17-14"><a href="#cb17-14" tabindex="-1"></a><span class="co">#&gt;   mode: &quot;collaborate&quot;</span></span>
+<span id="cb17-15"><a href="#cb17-15" tabindex="-1"></a><span class="co">#&gt; table:</span></span>
+<span id="cb17-16"><a href="#cb17-16" tabindex="-1"></a><span class="co">#&gt;   name: &quot;alpha_trial&quot;</span></span>
+<span id="cb17-17"><a href="#cb17-17" tabindex="-1"></a><span class="co">#&gt;   source: &quot;clone&quot;</span></span>
+<span id="cb17-18"><a href="#cb17-18" tabindex="-1"></a><span class="co">#&gt;   n_rows: 72</span></span>
+<span id="cb17-19"><a href="#cb17-19" tabindex="-1"></a><span class="co">#&gt;   n_cols: 7</span></span>
+<span id="cb17-20"><a href="#cb17-20" tabindex="-1"></a><span class="co">#&gt;   provenance:</span></span>
+<span id="cb17-21"><a href="#cb17-21" tabindex="-1"></a><span class="co">#&gt;     n_rows: &quot;structure&quot;</span></span>
+<span id="cb17-22"><a href="#cb17-22" tabindex="-1"></a><span class="co">#&gt;     n_cols: &quot;structure&quot;</span></span>
+<span id="cb17-23"><a href="#cb17-23" tabindex="-1"></a><span class="co">#&gt; design:</span></span>
+<span id="cb17-24"><a href="#cb17-24" tabindex="-1"></a><span class="co">#&gt;   treatment_cols:</span></span>
+<span id="cb17-25"><a href="#cb17-25" tabindex="-1"></a><span class="co">#&gt;     - &quot;gen&quot;</span></span>
+<span id="cb17-26"><a href="#cb17-26" tabindex="-1"></a><span class="co">#&gt;   block_cols:</span></span>
+<span id="cb17-27"><a href="#cb17-27" tabindex="-1"></a><span class="co">#&gt;     - &quot;rep&quot;</span></span>
+<span id="cb17-28"><a href="#cb17-28" tabindex="-1"></a><span class="co">#&gt;     - &quot;block&quot;</span></span>
+<span id="cb17-29"><a href="#cb17-29" tabindex="-1"></a><span class="co">#&gt;   spatial_cols:</span></span>
+<span id="cb17-30"><a href="#cb17-30" tabindex="-1"></a><span class="co">#&gt;     - &quot;row&quot;</span></span>
+<span id="cb17-31"><a href="#cb17-31" tabindex="-1"></a><span class="co">#&gt;     - &quot;col&quot;</span></span>
+<span id="cb17-32"><a href="#cb17-32" tabindex="-1"></a><span class="co">#&gt;   unit_col: &quot;plot&quot;</span></span>
+<span id="cb17-33"><a href="#cb17-33" tabindex="-1"></a><span class="co">#&gt;   provenance:</span></span>
+<span id="cb17-34"><a href="#cb17-34" tabindex="-1"></a><span class="co">#&gt;     treatment_cols: &quot;structure&quot;</span></span>
+<span id="cb17-35"><a href="#cb17-35" tabindex="-1"></a><span class="co">#&gt;     block_cols: &quot;structure&quot;</span></span>
+<span id="cb17-36"><a href="#cb17-36" tabindex="-1"></a><span class="co">#&gt;     spatial_cols: &quot;analyst&quot;</span></span>
+<span id="cb17-37"><a href="#cb17-37" tabindex="-1"></a><span class="co">#&gt;     unit_col: &quot;analyst&quot;</span></span>
+<span id="cb17-38"><a href="#cb17-38" tabindex="-1"></a><span class="co">#&gt; columns:</span></span>
+<span id="cb17-39"><a href="#cb17-39" tabindex="-1"></a><span class="co">#&gt;   - name: &quot;plot&quot;</span></span></code></pre></div>
+<p>Every count carries a provenance class. <code>structure</code> marks
+a count that is exact in the clone and so equal on the real table, such
+as the number of missing values or the number of genotypes.
+<code>clone_estimate</code> marks one that was re-simulated, such as the
+number of distinct yields. <code>analyst</code> marks what was named in
+the call. Level labels never appear: the card says there are 24
+genotypes and does not list them. When column names are aliased, the
+card uses the aliases. For a set, <code>data_card(ms)</code> returns one
+card per table, and <code>data_card(ms, file = dir)</code> writes one
+file per table.</p>
+</div>
+<div id="multi-environment-structure" class="section level3">
+<h3>Multi-environment structure</h3>
+<p>For a multi-environment trial, <code>detect_design()</code> answers
+three questions separately:</p>
+<ol style="list-style-type: decimal">
+<li>Which rows belong to each environment?</li>
+<li>Do the treatments connect the environments, so that they can be
+compared?</li>
+<li>What randomisation structure can be recovered within each
+environment?</li>
+</ol>
+<p>A block or field layout seen in the data suggests the original
+randomisation but does not confirm it. A small toy with two environments
+and three genotypes:</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a>met <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(</span>
+<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a>  <span class="at">env =</span> <span class="fu">factor</span>(<span class="fu">c</span>(<span class="st">&quot;E1&quot;</span>, <span class="st">&quot;E2&quot;</span>)),</span>
+<span id="cb18-3"><a href="#cb18-3" tabindex="-1"></a>  <span class="at">rep =</span> <span class="fu">factor</span>(<span class="fu">seq_len</span>(<span class="dv">2</span><span class="dt">L</span>)),</span>
+<span id="cb18-4"><a href="#cb18-4" tabindex="-1"></a>  <span class="at">gen =</span> <span class="fu">factor</span>(<span class="fu">c</span>(<span class="st">&quot;G1&quot;</span>, <span class="st">&quot;G2&quot;</span>, <span class="st">&quot;G3&quot;</span>))</span>
+<span id="cb18-5"><a href="#cb18-5" tabindex="-1"></a>)</span>
+<span id="cb18-6"><a href="#cb18-6" tabindex="-1"></a>met<span class="sc">$</span>yield <span class="ot">&lt;-</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(met)) <span class="sc">+</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2</span>), <span class="at">each =</span> <span class="dv">6</span><span class="dt">L</span>)</span>
+<span id="cb18-7"><a href="#cb18-7" tabindex="-1"></a></span>
+<span id="cb18-8"><a href="#cb18-8" tabindex="-1"></a>ds <span class="ot">&lt;-</span> <span class="fu">detect_design</span>(met)</span>
+<span id="cb18-9"><a href="#cb18-9" tabindex="-1"></a>ds<span class="sc">@</span>scope_label</span>
+<span id="cb18-10"><a href="#cb18-10" tabindex="-1"></a><span class="co">#&gt; [1] &quot;multi_environment&quot;</span></span>
+<span id="cb18-11"><a href="#cb18-11" tabindex="-1"></a>ds<span class="sc">@</span>env_cols</span>
+<span id="cb18-12"><a href="#cb18-12" tabindex="-1"></a><span class="co">#&gt; [1] &quot;env&quot;</span></span>
+<span id="cb18-13"><a href="#cb18-13" tabindex="-1"></a>ds<span class="sc">@</span>connectivity<span class="sc">$</span>status</span>
+<span id="cb18-14"><a href="#cb18-14" tabindex="-1"></a><span class="co">#&gt; [1] &quot;connected&quot;</span></span>
+<span id="cb18-15"><a href="#cb18-15" tabindex="-1"></a>ds<span class="sc">@</span>within_design_label</span>
+<span id="cb18-16"><a href="#cb18-16" tabindex="-1"></a><span class="co">#&gt; [1] &quot;RCBD&quot;</span></span></code></pre></div>
+<p>Automatic detection is conservative. A column named <code>env</code>
+or <code>environment</code>, or a common site-year pattern, is taken as
+the environment only when no other column explains the structure as
+well. A site column on its own is taken only when treatments are
+replicated across sites, so a nested block is not mistaken for an
+environment. When you know the environment columns, name them:</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a>ds_explicit <span class="ot">&lt;-</span> <span class="fu">detect_design</span>(met, <span class="at">env =</span> <span class="st">&quot;env&quot;</span>)</span></code></pre></div>
+</div>
+<div id="figure-the-multi-environment-coverage-plot" class="section level3">
+<h3>Figure: the multi-environment coverage plot</h3>
+<p><code>plot()</code> on a design summary, or
+<code>plot_design_summary()</code>, draws a compact environment overview
+in base graphics. With <code>engine = &quot;ggplot2&quot;</code> it returns a
+<code>ggplot2</code> object you can save with
+<code>ggplot2::ggsave()</code>; printed, it is the figure below. It
+shows whether coverage is even across environments, which the
+connectivity flag alone does not.</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a><span class="fu">plot</span>(ds_explicit, <span class="at">df =</span> met, <span class="at">engine =</span> <span class="st">&quot;ggplot2&quot;</span>)</span></code></pre></div>
+<div class="float">
+<img src="data:image/png;base64,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GXbZZZflrOvxxx/383344Yc5w5vxw0cffRQbHXLIIc24iQ23Tffff7/97Gc/s2uvvdZfHDbcBpDhThU466yz7KSTTjJ9t/PT8ccf74/NZ555pvXu3Tt/dFN9bqXjeCMUXLHf3EbIP3lEAAEEEECgHgRavunE9OnT7R//+Ee7ZaE7tn/+85/bna4jJthll11MJ9tffvllRyyeZSJQloAujkaMGGEK1pEQyCqgwO0RRxzhgwxrrbWWnX/++Xb77bfbJZdcYiNHjrQFCxbYRRddZPvtt1/WRTM9AhUJ8JtbER8zI4AAAggg4AVaOtCw7LLLegTdjW0v/e1vf7P33nvPevTo0d6kVR8/d+7cgsv8wx/+4Gs6XHfddQWnaZYRqk6tWh36q1aTlWax6Yzt+OyzzzpjtayzCQRmzpxpBxxwgN8SNV978sknbf/99/cBhj333NMHHI4++mg//qqrrrIbb7yxCba68Ca00nG8sEL9jCn2m1s/uSQnCCCAAAII1LdASwcadtxxR18611xzTbulpJNdpW222abdaWs5Qd++fW2ZZZaxJZZYopar7ZR1devWzW+rtrd79+6dkgdWigAClQsocPvpp5/6BV1wwQW28MILt1noiSeeaCEY/Ne//rXN+GYa0ErH8WYqN7YFAQQQQAABBAoLtFwfDUkKVY9Udd2XXnrJN59Yb731kqPj91988YVdf/31/vMPfvADKxSYUBOM2bNn21e+8hXfOWO8gMQbdXj21ltv+U4dhw0blhjT9u3LL79sr776ql+mxr7zzjt29913+wm/9a1v+YttVVtXZ2oKNBTKf9sltx0SRZE988wz9tRTT5k6plxuueVs6NChtuGGG9piiy3WZga1YVXV+S5duti3v/1tP155ffjhh/1yVlllFd+RW36eZPnggw/66VdbbTVbccUV2yw7DPjXv/5lb7/9ti266KL2zW9+0z755BN77LHH/Oj111/fdHKupPbd6qiza9eutummm3qnv/zlL/b555/bdtttZ4MGDfLTJf9puY8++qjfVuVpnXXW8X7Kd1qSjWq0rLzyyjZw4EDTHS+tUx1xaj3Kj2pZLLnkkm1mD1Yhf5pAnd7de++9/nX48OG28cYbW8+ePeN5dRH20EMP2QMPPOD3FS1/8803j8envalVGWo999xzjz399NNxNmQp0+WXX94GDx4cDy/1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+emuVf/+/a1Xr15lb4Pm//LLL3PumhVaX9krKXNG3SH9zW9+U+bczNZIAtXc59L26UayaNS8NqJ7t27d7Pzzz29D/sknn5hqHFx55ZX27LPP+hpjDz30kK2yyio50z711FM2atQomzlzpi233HL2s5/9zNZff31bcskl7bXXXrNLL73UVPNgr732ss8//9x+/OMf58yvD5p23333jYerFtfHH39s//znP+3RRx+13Xff3d5//33bf//942mSb77zne/4mgthmNYze/Zse+yxx+yFF16wMWPGmPLuAlBhEl4RQAABBBDILECgITNZa8zwxRdf+A0tpfpna4g01lYWKr+DDjrI9FdJSqt6W2h9lawny7zvvfeeHXDAAXb11VdnmY1pG1igmvtc2j7dwDQNk/VGdFdzsbSL/4B+0kkn2bBhw2z69Ol21VVX2THHHBNGmasFZj/4wQ98kEHNHKZOnWo9evSIx2s+NZv49a9/bb/4xS98EGKzzTaz1VdfPZ5Gb/r16+enyRn4vw+u1pode+yxdsYZZxQMNLjaFKZAXVq65JJLbL/99rMLLrjAtt12Wx8USZuOYQgggAACCLQn0PIN8dQu8qOPPmrPyY9X1P/tt98uadrkRK6Kr29/mRzW3nvd7dBdilKT7l7ojkqpSW3s33rrLd/WvtR50qZz1Su9iatGkza6zTBNp7au1UqU34JqUTbscu6++27frllBhlVXXdV23nnnqm1Llv3rnXfe8RcSWVau78O7775bcBYdb0o9Dui7qONAllROnrMez7IeI0L+sx4Dw3wd+Zo1T7Ww0j6aNZV7HM7yO/PZZ5/5/gD0W1NJ0u+zHLOmrGWVdfmFpl9iiSXiC/w77rgjZ7JzzjnH/vWvf/n+F3S8SgYZkhMeddRR9s1vftP/PmetoXXIIYeY+ot444037LnnnksutqT3P/zhD+3000/306pWxQcffFDSfEyEAAIIIIBAvkBLBhp0AqJovjqL050BdeCkTpjUgVzaSdGf/vQn38mSqp2rw6W+ffvaVlttZS+++GK+p5133nm20kor2W233Wa33nqrv7Oh5S+11FJ+HWeffbblX5SrA6YtttjCX6Toh33ZZZf1f66tpX33u9/1HUW1WZEboBOwH/3oR7bCCiv47ejTp48NHjzY5yF/HWF+3WH5/ve/7/Oj+dTh1OjRo+3f//63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AQINrVHObCUCCCCAAAIIIIAAAggggAACNREg0FATZlaCAAIIIIAAAggggAACCCCAQGsIEGhojXJmKxFAAAEEEEAAAQQQQAABBBCoiQCBhpowsxIEEEAAAQQQQAABBBBAAAEEWkOAQENrlDNbiQACCCCAAAIIIIAAAggggEBNBAg01ISZlSCAAAIIIIAAAggggAACCCDQGgIEGlqjnNlKBBBAAAEEEEAAAQQQQAABBGoiQKChJsysBAEEEEAAAQQQQAABBBBAAIHWECDQ0BrlzFYigAACCCCAAAIIIIAAAgggUBMBAg01YWYlCCCAAAIIIIAAAggggAACCLSGAIGG1ihnthIBBBBAAAEEEEAAAQQQQACBmggQaKgJMytBAAEEEEAAAQQQQAABBBBAoDUECDS0RjmzlQgggAACCCCAAAIIIIAAAgjURIBAQ02YWQkCCCCAAAIIIIAAAggggAACrSFAoKE1ypmtRAABBBBAAAEEEEAAAQQQQKAmAgQaasLMShBAAAEEEEAAAQQQQAABBBBoDQECDa1RzmwlAggggAACCCCAAAIIIIAAAjURINBQE2ZWggACCCCAAAKnOqw2AABAAElEQVQIIIAAAggggEBrCDREoCGKInvnnXfs008/bY1SYSsRQAABBBBAAAEEEEAAAQQQaFCBbvWe71tuucUuvPBC++CDD6xr1662+uqr25FHHmmrrbZavWed/CGAAAIIIIAAAggggAACCCDQcgJdXG2BqF63+tVXX7Vx48bZ+uuvbzvssIN9/PHHdtVVV9mMGTN88GHQoEH1mnXyhQACCCCAAAIIIIAAAggggEBLCtR1jYYJEybYoosuaieffLL17NnTF9CKK65oP/7xj+1vf/ub7bPPPi1ZaGw0AggggAACCCCAAAIIIIAAAvUqULeBBlW0GDlypG255ZZxkEGIajqhJhTvvvtuvZqSLwQQQAABBBBAAAEEEEAAAQRaVqBuAw1dunSxESNG5BTMggUL7JprrjG9Dh8+PGdcex8UuPjwww/bm4zxCCCAAAIIIIAAAggggAACCCCQEOjRo4ctvPDCiSHF39ZtoCE/26eddpo9+OCD9tFHH9mhhx7aJgiRP33a57lz56YNZliZAqv9/K4y52Q2BBBAAIHOEJh2+uadsdqmWSe/e01TlGwIAgi0gAC/edUt5EUWWSTTAhsi0KAaDKqNsNJKK9mzzz5r99xzj22wwQb+c5atVRSGhAACCCCAQKsK8DvYqiXPdiOAAAKtJ8BvXnXLvFu3bKGDun7qRBrNK6+8Yj/60Y+sb9++vhlF2jQMq41Arz0uq82KWAsCCCCAQFUEPv7j2Kosp1UXwu9eq5Y8240AAo0owG9e55Za185dffa165GW3/nOd/wjLl9++eXsC2AOBBBAAAEEEEAAAQQQQAABBBDoMIG6DTR88MEHdt5559kdd9zRZuP79+/vh/HkiTY0DEAAAQQQQAABBBBAAAEEEECgUwXqNtDQq1cvmzJlio0fP94+//zzGEn9Ndxyyy220EIL2eDBg+PhvEEAAQQQQAABBBBAAAEEEEAAgc4XqNtAgzqbGDdunM2ePduOP/54mzp1qt1777128MEH2zvvvGN77rmnLbHEEp0vSA4QQAABBBBAAAEEEEAAAQQQQCAWyNZ1ZDxbbd7stttu1qVLF5s8ebI9/PDDfqWq6aBgw/bbb1+bTLAWBBBAAAEEEEAAAQQQQAABBBAoWaCuAw0KMijYsPPOO9tbb71lquWw7LLLWteudVsRo2R4JkQAAQQQQAABBBBAAAEEEECgGQXqOtAQwBVgGDBgQPjIKwIIIIAAAggggAACCCCAAAII1KkAVQPqtGDIFgIIIIAAAggggAACCCCAAAKNKECgoRFLjTwjgAACCCCAAAIIIIAAAgggUKcCBBrqtGDIFgIIIIAAAggggAACCCCAAAKNKECgoRFLjTwjgAACCCCAAAIIIIAAAgggUKcCBBrqtGDIFgIIIIAAAggggAACCCCAAAKNKECgoRFLjTwjgAACCCCAAAIIIIAAAgggUKcCBBrqtGDIFgIIIIAAAggggAACCCCAAAKNKECgoRFLjTwjgAACCCCAAAIIIIAAAgggUKcCBBrqtGDIFgIIIIAAAggggAACCCCAAAKNKECgoRFLjTwjgAACCCCAAAIIIIAAAgggUKcCBBrqtGDIFgIIIIAAAggggAACCCCAAAKNKECgoRFLjTwjgAACCCCAAAIIIIAAAgggUKcCBBrqtGDIFgIIIIAAAggggAACCCCAAAKNKECgoRFLjTwjgAACCCCAAAIIIIAAAgggUKcCBBrqtGDIFgIIIIAAAggggAACCCCAAAKNKECgoRFLjTwjgAACCCCAAAIIIIAAAgggUKcCBBrqtGDIFgIIIIAAAggggAACCCCAAAKNKECgoRFLjTwjgAACCCCAAAIIIIAAAgggUKcCBBrqtGDIFgIIIIAAAggggAACCCCAAAKNKECgoRFLjTwjgAACCCCAAAIIIIAAAgggUKcCBBrqtGDIFgIIIIAAAggggAACCCCAAAKNKECgoRFLjTwjgAACCCCAAAIIIIAAAgggUKcCBBrqtGDIFgIIIIAAAggggAACCCCAAAKNKECgoRFLjTwjgAACCCCAAAIIIIAAAgggUKcCBBrqtGDIFgIIIIAAAggggAACCCCAAAKNKECgoRFLjTwjgAACCCCAAAIIIIAAAgggUKcCBBrqtGDIFgIIIIAAAggggAACCCCAAAKNKECgoRFLjTwjgAACCCCAAAIIIIAAAgggUKcCBBrqtGDIFgIIIIAAAggggAACCCCAAAKNKECgoRFLjTwjgAACCCCAAAIIIIAAAgggUKcCBBrqtGDIFgIIIIAAAggggAACCCCAAAKNKECgoRFLjTwjgAACCCCAAAIIIIAAAgggUKcCBBrqtGDIFgIIIIAAAggggAACCCCAAAKNKECgoRFLjTwjgAACCCCAAAIIIIAAAgggUKcCBBrqtGDIFgIIIIAAAggggAACCCCAAAKNKECgoRFLjTwjgAACCCCAAAIIIIAAAgggUKcCBBrqtGDIFgIIIIAAAggggAACCCCAAAKNKECgoRFLjTwjgAACCCCAAAIIIIAAAgggUKcCBBrqtGDIFgIIIIAAAggggAACCCCAAAKNKECgoRFLjTwjgAACCCCAAAIIIIAAAgggUKcCBBrqtGDIFgIIIIAAAggggAACCCCAAAKNKECgoRFLjTwjgAACCCCAAAIIIIAAAgggUKcCBBrqtGDIFgIIIIAAAggggAACCCCAAAKNKECgoRFLjTwjgAACCCCAAAIIIIAAAgggUKcCBBrqtGDIFgIIIIAAAggggAACCCCAAAKNKECgoRFLjTwjgAACCCCAAAIIIIAAAgggUKcCBBrqtGDIFgIIIIAAAggggAACCCCAAAKNKECgoRFLjTwjgAACCCCAAAIIIIAAAgggUKcCBBrqtGDIFgIIIIAAAggggAACCCCAAAKNKECgoRFLjTwjgAACCCCAAAIIIIAAAgggUKcCBBrqtGDIFgIIIIAAAggggAACCCCAAAKNKECgoRFLjTwjgAAC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M23Pnj1NfyQEEEAAAQQQQAABBBBAAAEEEGhOgUyBhiFDhtjMmTPLlvjlL39pJ5xwQtnzMyMCCCCAAAIIIIAAAggggAACCNS3QKZAQ79+/drUaFANB9V0UOrWrZstu+yytvzyy9uHH35or7/+un3yySd+3Prrr28rrLCCf88/BBBAAAEEEEAAAQQQQAABBBBoToFMfTQ888wz9s477+T87bvvvtalSxc76qijbMaMGT648Mgjj9jzzz9vs2fPtgkTJlifPn1s5ZVXtj333LM5FdkqBBBAAAEEEEAAAQQQQAABBBDwApkCDflmDz/8sJ122ml2zDHH+FfVeEim7t27mwIREydOtD//+c82efLk5GjeI4AAAggggAACCCCAAAIIIIBAkwlUFGi4++67Pcfee+9dlGX06NG22GKL2f333190OkYigAACCCCAAAIIIIAAAggggEBjC1QUaFDTiFLSF198YV9++aXNmzevlMmZBgEEEEAAAQQQQAABBBBAAAEEGlSgokDDqFGj/GaraUSxdN555/kgwzbbbFNsMsYhgAACCCCAAAIIIIAAAggggECDC1QUaBgxYoTv6FH9NBx44IH2yiuv5HC89tprfrj6cOjdu7eFwETORHxAAAEEEEAAAQQQQAABBBBAAIGmEago0LDwwgvbfffdZwMGDLDzzz/fP1lCfTHoc48ePWzgwIF++IorrmgPPfSQLbHEEk0Dx4YggAACCCCAAAIIIIAAAggggEBbgYoCDVrc0KFD7YknnrC99trL1lhjDd8Xw+uvv27ql2Httdc2dRT52GOP2ZAhQ9qunSEIIIAAAggggAACCCCAAAIIINBUAt2qsTVLLbWUTZo0yS/qs88+s5deeskGDRrkazVUY/ksAwEEEEAAAQQQQAABBBBAAAEEGkOgKoEGberTTz9t119/vU2bNs331XDbbbfZrFmzbMKECbbffvtZv379GkOEXCKAAAIIIIAAAggggAACCCCAQNkCFQca5s6da4ceeqjpyRPz58+PM6JHWU6fPt3UEeQ555xjCjxssMEG8XjeIIAAAggggAACCCCAAAIIIIBA8wlU3EfDEUccYRdeeKFvJrH77rubnkQRkmoxrLzyyvbee+/ZlltuaZ988kkYxSsCCCCAAAIIIIAAAggggAACCDShQEWBhqlTp9r48eN9h5AzZsywyy+/3NZaa62YadVVV/VNKnbaaScfbAj9OMQT8AYBBBBAAAEEEEAAAQQQQAABBJpKoKJAw4MPPugxzj33XOvZs2cqjIYfffTRfpyeTkFCAAEEEEAAAQQQQAABBBBAAIHmFago0PDCCy94GT3isljS+N69e9vMmTOLTcY4BBBAAAEEEEAAAQQQQAABBBBocIGKAg0rrbSS3/zXX3+9KMO7775rc+bM8f01FJ2QkQgggAACCCCAAAIIIIAAAggg0NACFQUa1ltvPb/xJ598clGE4447zo8fMmRI0ekYiQACCCCAAAIIIIAAAggggAACjS1QUaBBT5IYPny4XX311bbddtuZ+mz47LPPvMjnn39u6pNhhx12sAkTJtjAgQNt3Lhxja1F7hFAAAEEEEAAAQQQQAABBBBAoKhAt6Jj2xnZtWtXu+yyy2yzzTazm266yf+FWdSsYt68ef7j4osvbpdeeqn16tUrjM78Onv2bPviiy+sf//+1qVLl8zzMwMCCCCAAAIIIIAAAggggAACCHS8QEWBBmVv0KBBpk4hzzrrLP94y5dfftm+/PJLmz9/vq2wwgo2atQoO+WUU3yAoJzNUQDj4osvtvfff9/Pvthii9kPfvADGzt2rHXv3r2cRTIPAggggAACCCCAAAIIIIAAAgh0kEDFgQbla9FFF7Vjjz3W/ynA8NZbb1m/fv2sR48eFWX71ltvtTPPPNPWXntt22+//XyNCA275JJL7NNPP7X999+/ouUzMwIIIIAAAggggAACCCCAAAIIVFegokDDJ598Yj179szJ0UILLWThaRQ5I8r4oOYWqsHw29/+1gcztIhNNtnExowZY9dee63tu+++tsgii5SxZGZBAAEEEEAAAQQQQAABBBBAAIGOEKioM0h1Arn66qvbqaee6msxVDOD6lRylVVWsV122SUOMoTlf+Mb37AFCxbYjBkzwiBeEUAAAQQQQAABBBBAAAEEEECgDgQqCjSoj4Rp06bZMccc42sxqD8GBR/0xIlKk5pjKICx9957t1nUAw884PtnWH755duMYwACCCCAAAIIIIAAAggggAACCHSeQEVNJ9Qh45prrumfPHHllVfaHXfc4f+WWGIJ23XXXe2HP/yhbbjhhlXdujvvvNPXnthxxx0zdQYZRZHNmjWrqnlhYQgggAACCDSSwHvvvddI2SWvCCCAAAIIlC3Ab17ZdKkz9unTJ1O3BV3cBXiUuqSMA/UoSwUa9LhLPSli7ty5fgnqyFEBB/WroEdTVpIef/xxO+qoo0w1GSZOnNimSUWxZWszZ86cWWwSxmUUWO3nd2Wcg8kRQAABBDpTYNrpm3fm6ht+3fzuNXwRsgEIINBCAvzmVbew+/bt6/tPLHWpVQs0JFf40Ucf+c4ar7rqKrv33ntNQYhu3brZBRdcYPvss09y0pLf33777fbrX//aVlxxRTvnnHNsqaWWKnleTahAg55UQaqewNI/+Uv1FsaSEEAAAQQ6XOCdC0Z3+DqaeQX87jVz6bJtCCDQbAL85lW3RPUQBl3Tl5pKn7LUJbrpVK1ir732siFDhviaB5MmTfLBhjfffDPDUv5/0j/96U924YUX2tChQ32/Db179/7/kSW+69KlS5snZJQ4K5MhgAACCCDQFAL5T4pqio1iIxBAAAEEEEgR4DcvBaWGg6oeaHj++eft8ssvtyuuuMJee+01vymqfbD77rv75hNZt23ChAm+OcYWW2zhm02oA0oSAggggAACCCCAAAIIIIAAAgjUp0BVAg1vv/22qTNIBRj++c9/+i1daKGFbKuttvL9M2y77ba28MILZxa4/vrrfZBh++23t0MOOcRUK4GEAAIIIIAAAggggAACCCCAAAL1K1BRoOGpp56yww8/3O6++25bsGCB38rVV1/dBxf22GMPW2655cre8tmzZ5tqM6gGg9qCjB8/vs2ydthhB1t22WXbDGcAAggggAACCCCAAAIIIIAAAgh0jkBFgYa///3vdtddd5n6TNh55519gGH48OFV2RI9YeLjjz/2y7r22mtTlzlixAgCDakyDEQAAQQQQAABBBBAAAEEEECgcwQqCjSsuuqqNnnyZNtxxx2r3tHiyJEjTX8kBBBAAAEEEEAAAQQQQAABBBBoHIGulWRVTSP0RImbb765ksUwLwIIIIAAAggggAACCCCAAAIINIlARYGGG264wR544AGbMmVKk3CwGQgggAACCCCAAAIIIIAAAgggUIlARYGG999/3697+eWXryQPzIsAAggggAACCCCAAAIIIIAAAk0iUFGgQU+W6NOnj11xxRX2wgsvNAkJm4EAAggggAACCCCAAAIIIIAAAuUKVNQZZK9eveyEE06wE0880dZff30bNmyYqYNI1XDo2rVtDGPTTTc1/ZEQQAABBBBAAAEEEEAAAQQQQKA5BSoKNNx555122GGHxTL333+/6a9Q6tKlC4GGQjgMRwABBBBAAAEEEEAAAQQQQKAJBCoKNAwdOtSOO+64khk22WSTkqdlQgQQQAABBBBAAAEEEEAAAQQQaDyBigINai6hPxICCCCAAAIIIIAAAggggAACCCAggbYdKZTp8vTTT/u+GsaMGWPDhw+3jz76yGbNmmWnnnqqfy1zscyGAAIIIIAAAggggAACCCCAAAINJFBRjQZt59y5c+3QQw+1iRMn2vz58+NNnzdvnk2fPt2OOeYYO+ecc+y2226zDTbYIB7PGwQQQAABBBBAAAEEEEAAAQQQaD6Bims0HHHEEXbhhRdajx49bPfdd7cRI0bESv369bOVV17Z3nvvPdtyyy3tk08+icfxBgEEEEAAAQQQQAABBBBAAAEEmk+gokDD1KlTbfz48aZOIWfMmGGXX365rbXWWrGSHnWpJhU77bSTDzZMmjQpHscbBBBAAAEEEEAAAQQQQAABBBBoPoGKAg0PPvigFzn33HOtZ8+eqToafvTRR/txTzzxROo0DEQAAQQQQAABBBBAAAEEEEAAgeYQqCjQ8MILL3gF1WgoljS+d+/eNnPmzGKTMQ4BBBBAAAEEEEAAAQQQQAABBBpcoKJAw0orreQ3//XXXy/K8O6779qcOXN8fw1FJ2QkAggggAACCCCAAAIIIIAAAgg0tEBFgYb11lvPb/zJJ59cFOG4447z44cMGVJ0OkYigAACCCCAAAIIIIAAAggggEBjC1QUaNCTJIYPH25XX321bbfddqY+Gz777DMv8vnnn5v6ZNhhhx1swoQJNnDgQBs3blxja5F7BBBAAAEEEEAAAQQQQAABBBAoKtCt6Nh2Rnbt2tUuu+wy22yzzeymm27yf2EWNauYN2+e/7j44ovbpZdear169QqjeUUAAQQQQAABBBBAAAEEEEAAgSYUqKhGgzwGDRpk6hTypJNOssGDB1v37t090/z5822FFVawffbZx1588UXbZJNNmpCPTUIAAQQQQAABBBBAAAEEEEAAgaRARTUawoIWXXRRO/bYY/2fAgxvvfWW9evXz3r06BEm4RUBBBBAAAEEEEAAAQQQQAABBFpAoCqBhqTTQgstZOFpFMnhvEcAAQQQQAABBBBAAAEEEEAAgeYXqFqg4csvv4ybTYht+vTpduutt5r6cVBHkSuuuGLza7KFCCCAAAIIIIAAAggggAACCLS4QMV9NLz00ks2evRoGzlyZEz52GOP2dprr20HHXSQHXDAATZgwICcjiLjCXmDAAIIIIAAAggggAACCCCAAAJNJVBRoEFPldh1113t+uuvNwUcQho7dqzp8ZbqKHLnnXe2Ll262JgxY3KmCdPyigACCCCAAAIIIIAAAggggAACzSNQUaBBTSOmTp1qm2++uT3wwANeRZ+nTZtmffv2tWeeecauvvpqmzhxos2ZM8emTJnSPHJsCQIIIIAAAggggAACCCCAAAIItBGoKNDw3HPP+QUeeeSRcQeQt9xyix+21VZbWc+ePf37rbfe2tdqePLJJ9tkgAEIIIAAAggggAACCCCAAAIIINA8AhUFGkJziQ033DAWue222/z7UaNGxcOWXHJJW2yxxWzGjBnxMN4ggAACCCCAAAIIIIAAAggggEDzCVQUaOjfv78Xefrpp/3rrFmz7IknnvC1F7bYYotY67777rNPP/2UJ0/EIrxBAAEEEEAAAQQQQAABBBBAoDkFKgo0DBs2zKucf/759vbbb9sxxxxjCxYssOHDh9vSSy/tx7344ot2yimn+PcbbbRRcyqyVQgggAACCCCAAAIIIIAAAggg4AW6VeKw7bbb2nrrrWfXXXed/9OyunXrZieeeKJf7P3332+bbbaZzZ8/3wYOHGh77LFHJatjXgQQQAABBBBAAAEEEEAAAQQQqHOBimo0dO3a1e655x7ba6+9bMCAAbbJJpvYVVdd5YML2m71zaAaDgo2PPTQQ7bIIovUOQfZQwABBBBAAAEEEEAAAQQQQACBSgQqqtGgFS+++OI2adKk1DwMHjzYXnvtNfpmSNVhIAIIIIAAAggggAACCCCAAALNJ1BxoCGQPP7443bDDTeY+mSYOXOmf9zlqquuattttx2BhoDEKwIIIIAAAggggAACCCCAAAJNLlBxoGH27Nk2btw4u/nmm3Oo1FRC6eSTT7YxY8bYeeedZ3379s2Zhg8IIIAAAggggAACCCCAAAIIINBcAhUFGqIo8h08TpkyxZZYYgnbZ599bK211vJPnHj33XfthRdesAkTJthll11mH3zwgd14443+0ZfNRcjWIIAAAggggAACCCCAAAIIIIBAEKgo0HDnnXeaggx68oQ6hVR/Dfnp6KOPtpEjR/oaD9dcc43tsssu+ZPwGQEEEEAAAQQQQAABBBBAAAEEmkSgoqdOPPLII55h/PjxqUEGjezdu7f98Y9/9NPde++9/pV/CCCAAAIIIIAAAggggAACCCDQnAIVBRree+89r7LGGmsU1VGnkL169bI33nij6HSMRAABBBBAAAEEEEAAAQQQQACBxhaoKNAwbNgwv/Wh48dCFP/+97/t448/tjB9oekYjgACCCCAAAIIIIAAAggggAACjS1QUaBh9OjRts4669h+++1nCiakJXUCqadS9O/f38aOHZs2CcMQQAABBBBAAAEEEEAAAQQQQKBJBDJ1BnnGGWfYnDlzcjZ93XXX9U+VWHvttW3HHXe0oUOH2rLLLmsffvihTZs2za699lqbOXOmHXzwwfbRRx/lzMsHBBBAAAEEEEAAAQQQQAABBBBoLoFMgYbf/va3PmiQRjBv3jy76qqr/F/a+HPOOcf69u1rCkyQEEAAAQQQQAABBBBAAAEEEECgOQUyBRoOP/zwNjUasrCMGDEiy+RMiwACCCCAAAIIIIAAAggggAACDSaQKdBw2GGHNdjmkV0EEEAAAQQQQAABBBBAAAEEEKilQEWdQdYyo6wLAQQQQAABBBBAAAEEEEAAAQTqXyBTjYZim3PHHXfYdddd558+8eabb/r+GAYOHGjbbrut7bbbbta9e/diszMOAQQQQAABBBBAAAEEEEAAAQSaQKDiQIOeJLHXXnv5IEO+x5NPPml/+ctf/J+ePrHwwgvnT8JnBBBAAAEEEEAAAQQQQAABBBBoIoGKAw2HHHKIDzIsueSSdtBBB9l6663nH2+pR1o+//zzdt5559lNN91k22+/vX9daKGFmoiPTUEAAQQQQAABBBBAAAEEEEAAgaRARYGGxx57zC6++GJbbbXV7NFHHzUFG5Jpm222sQMPPNC22GILu/XWW23q1Km20UYbJSfhPQIIIIAAAggggAACCCCAAAIINJFARZ1BPvzww55CtRbygwzBaNFFF7WJEyf6j/fcc08YzCsCCCCAAAIIIIAAAggggAACCDShQEWBhhdeeMGTDBs2rCjN4MGDrU+fPhYCE0UnZiQCCCCAAAIIIIAAAggggAACCDSsQEWBhv79+/sNf+ONN4oCfPDBBzZnzhz7yle+UnQ6RiKAAAIIIIAAAggggAACCCCAQGMLVBRoWGeddfzWn3XWWUUVzj77bIuiyIYMGVJ0OkYigAACCCCAAAIIIIAAAggggEBjC1QUaBg9erStscYadvnll9vuu+9uL774Yo7Gm2++aQcccICdcsoptswyy9gee+yRM54PCCCAAAIIIIAAAggggAACCCDQXAIVPXWiW7du/qkTCjhcccUV/q9Hjx7+8Zbvvvuuby4hLnUIOWnSJFtqqaWaS4+tQQABBBBAAAEEEEAAAQQQQACBHIGKajRoSXpc5bPPPmvjxo0z9dnw6aef2ksvveSDDD179jQFIZ5//nnbaqutclbMBwQQQAABBBBAAAEEEEAAAQQQaD6Bimo0BA492nLy5Mn+43/+8x975ZVXfK2G5ZZbLkzCKwIIIIAAAggggAACCCCAAAIItIBAVQINSScFHfRHQgABBBBAAAEEEEAAAQQQQACB1hOouOlE65GxxQgggAACCCCAAAIIIIAAAgggUEiAQEMhGYYjgAACCCCAAAIIIIAAAggggEBmAQINmcmYAQEEEEAAAQQQQAABBBBAAAEECgkQaCgkw3AEEEAAAQQQQAABBBBAAAEEEMgsQKAhMxkzIIAAAggggAACCCCAAAIIIIBAIQECDYVkGI4AAggggAACCCCAAAIIIIAAApkFqvZ4yy+//NK6d+8eZ2D69Ol26623WteuXW277bazFVdcMR7HGwQQQAABBBBAAAEEEEAAAQQQaE6Bims0vPTSSzZ69GgbOXJkLPTYY4/Z2muvbQcddJAdcMABNmDAALvpppvi8bxBAAEEEEAAAQQQQAABBBBAAIHmFKgo0DBv3jzbdddd7frrrzcFHEIaO3asff755zZo0CDbeeedrUuXLjZmzJicacK0vCKAAAIIIIAAAggggAACCCCAQPMIVBRoUNOIqVOn2uabb24PPPCAV9HnadOmWd++fe2ZZ56xq6++2iZOnGhz5syxKVOmNI8cW4IAAggggAACCCCAAAIIIIAAAm0EKgo0PPfcc36BRx55pK200kr+/S233OJft9pqK+vZs6d/v/XWW/taDU8++aT/zD8EEEAAAQQQQAABBBBAAAEEEGhOgYoCDaG5xIYbbhjr3Hbbbf79qFGj4mFLLrmkLbbYYjZjxox4GG8QQAABBBBAAAEEEEAAAQQQQKD5BCp66kT//v29yNNPP20jRoywWbNm2RNPPOFrL2yxxRax1n333Weffvpppz55Iooin784U7xBAAEEEECgxQTee++9FttiNhcBBBBAoFUF+M2rbsn36dPHFllkkZIXWlGgYdiwYX5F559/vq222mp24okn2oIFC2zjjTe2pZde2o978cUX7ZRTTvHvN9poo5Iz1hET9u7duyMWyzIRQAABBBBoCAF+BxuimMgkAggggEAVBPjNqwJiYhHdumULHWSbOrEivd12221tvfXWs+uuu87/aZgyoICD0v3332+bbbaZzZ8/3wYOHGh77LGHH94Z//Tki0UXXbQzVs06EUAAAQQQqAsBfgfrohjIBAIIIIBADQT4zasBcpFVVNRHQ9euXe2ee+6xvfbaywYMGGCbbLKJXXXVVT64oHWqbwbVcFCw4aGHHspU1aJInhmFAAIIIIAAAggggAACCCCAAAJ1KlBRjQZt0+KLL26TJk1K3bzBgwfba6+95vtm+OSTT3wfCf369UudloEIIIAAAggggAACCCCAAAIIIND4AhXVaLjyyittmWWWseeffz5Vonv37j7IoCYUaiMT+mpInZiBCCCAAAIIIIAAAggggAACCCDQ8AIVBRrmzp1r77zzjs2bN68oxPTp001PfVCtBhICCCCAAAIIIIAAAggggAACCDSvQKamEw8++KDttttusUYIHIwcOdJUeyEtKRjx/vvv+1FDhw5Nm4RhCCCAAAIIIIAAAggggAACCCDQJAKZAg16bOW6665rU6ZMydn8mTNn5nzO/6AnPigYMXbs2PxRfEYAAQQQQAABBBBA4P/auxdoK8s6f+A/7gpyUS5eIhGkMO9Ko43gBcgLldlkjqWmU1Eua7TSJDMYBJRxluUlh1LJmXGBDWYzuczGJnUckOUal5ppo6YyGWhyU1SQiwqc/37emb3/5xzOOZzDPrj3+/J519qevd/b83s+D8vD/vK+z0uAAAECBAok0KGgIfU7PVWifIXCHXfcEZMnT4577703DjzwwBZZ0pUO/fr1iz59+rS43UoCBAgQIECAAAECBAgQIECgOAIdDhpSYFAODcaMGRPnn39+HHzwwTF06NDiqOgJAQIECBAgQIAAAQIECBAgsF0CHQ4aGrdyzDHHRHpZCBAgQIAAAQIECBAgQIAAAQJJoKqgoTFhup0ivdp6AsXgwYMjvSwECBAgQIAAAQIECBAgQIBAMQWqDhp++9vfxsUXXxwPPvjgNoWmTZsWV1xxxTb3swMBAgQIECBAgAABAgQIECCQT4GqgobXX389TjvttFi6dGnW+zTp45577hldu3ZtUWPQoEEtrreSAAECBAgQIECAAAECBAgQKIZAVUHDXXfdlYUMaTLIn//85zFy5MhiqOgFAQIECBAgQIAAAQIECBAgsF0CLV960M5TPfHEE9meV111lZChnWZ2I0CAAAECBAgQIECAAAECRRaoKmhIt0qk5UMf+lCRjfSNAAECBAgQIECAAAECBAgQaKdAVUFD+dGWjz/+eDubsxsBAgQIECBAgAABAgQIECBQZIGqgoaPfvSjMW7cuJgyZUr8z//8T5Gd9I0AAQIECBAgQIAAAQIECBBoh0BVk0EuW7Yszj333LjooovioIMOivHjx8d+++0XAwYMaLHpCRMmRHpZCBAgQIAAAQIECBAgQIAAgWIKVBU0PPDAA/GlL32pInPvvfdW3rf0plevXoKGlmCsI0CAAAECBAgQIECAAAECBRGoKmgYPXp0zJgxo90Uxx9/fLv3tSMBAgQIECBAgAABAgQIECCQP4GqgobDDjss0stCgAABAgQIECBAgAABAgQIEEgCVU0GiZAAAQIECBAgQIAAAQIECBAg0Fig04KGp556KqZPnx7nnHNOjBkzJtasWROvvvpqzJo1K/vZuFHvCRAgQIAAAQIECBAgQIAAgWIKVHXrRCLZsGFDXHzxxTFnzpzYvHlzRWnTpk2xePHi+O53vxvXX399pIki05wOFgIECBAgQIAAAQIECBAgQKC4AlVf0XDppZfGTTfdFL17946zzz47Gk/4OGjQoBgxYkSsWrUqJk6cGOvWrSuupJ4RIECAAAECBAgQIECAAAEC1c3R8Oijj8bs2bPj8MMPj2XLlsW8efPioIMOqrCOHDky0i0VZ5xxRhY23HrrrZVt3hAgQIAAAQIECBAgQIAAAQLFE6jqioZFixZlIjfccEP06dOnRZ20/vLLL8+2PfbYYy3uYyUBAgQIECBAgAABAgQIECBQDIGqgoZnn302U0hXNLS1pO19+/aN5cuXt7WbbQQIECBAgAABAgQIECBAgEDOBaoKGvbdd9+s+0uXLm2TYeXKlbF27dpsvoY2d7SRAAECBAgQIECAAAECBAgQyLVAVUHDEUcckXX+yiuvbBNh6tSp2fZDDjmkzf1sJECAAAECBAgQIECAAAECBPItUFXQkJ4kMWbMmLjjjjvitNNOizRnw8aNGzORt99+O9KcDKeffnrccsstsd9++8V5552Xby3VEyBAgAABAgQIECBAgAABAm0KdG9z6zY2du3aNebOnRvjx4+Pu+++O3uVD0m3VWzatCn72L9//7jttttit912K2/2kwABAgQIECBAgAABAgQIECigQFVXNCSP4cOHR5oUcubMmTFq1Kjo0aNHxrR58+YYOnRoTJo0KZ5//vk47rjjCsinSwQIECBAgAABAgQIECBAgEBjgaquaCifaJdddokpU6ZkrxQw/OlPf4pBgwZF7969y7v4SYAAAQIECBAgQIAAAQIECOwEAp0SNDR26tatW5SfRtF4vfcECBAgQIAAAQIECBAgQIBA8QU6JWj45S9/mU38mK5k2LJlS6tqn/zkJyO9LAQIECBAgAABAgQIECBAgEAxBaoKGhoaGuLUU0+NFDS0Z0lzNgga2iNlHwIECBAgQIAAAQIECBAgkE+BqoKG+fPnZyFDmgAyTfo4cuTISE+YaG058sgjW9tkPQECBAgQIECAAAECBAgQIFAAgaqChkceeSQjuPHGG+P8888vAIcuECBAgAABAgQIECBAgAABAtUIVPV4y169emVtjxs3rpoaHEuAAAECBAgQIECAAAECBAgURKCqoOGEE07IGJ577rmCcOgGAQIECBAgQIAAAQIECBAgUI1AVUHDhAkT4qSTTorJkyfH0qVLq6nDsQQIECBAgAABAgQIECBAgEABBKqao6Fnz55x1113xYc//OE44IADYuzYsTFs2LBI61taPv7xj8fHPvaxljZZR4AAAQIECBAgQIAAAQIECBRAoKqgYfPmzTF16tR45plnMor77ruvTZLBgwcLGtoUspEAAQIECBAgQIAAAQIECORboKqg4aGHHorvf//72RUM6WqGY489NgYOHNiqyNFHH93qNhsIECBAgAABAgQIECBAgACB/AtUFTQ8+OCDmcAll1wSs2bNyr+GHhAgQIAAAQIECBAgQIAAAQJVCVQ1GeT69euzxs8888yqinAwAQIECBAgQIAAAQIECBAgUAyBqoKG8uMtn3zyyWJo6AUBAgQIECBAgAABAgQIECBQlUBVQcP48ePjqKOOiunTp8d///d/V1WIgwkQIECAAAECBAgQIECAAIH8C1Q1R8OqVavi/PPPjwsvvDAL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km0ECBAgUHgBT28q/BDrIAECBAj8n4DfebX9o1DVrRP77rtvVv3SpUvb7MXKlStj7dq12XwNbe5oIwECBAgQIECAAAECBAgQIJBrgaqChiOOOCLr/JVXXtkmwtSpU7PthxxySJv72UiAAAECBAgQIECAAAECBAjkW6CqoCE9SWLMmDFxxx13xGmnnRZpzoaNGzdmIm+//XY2J8Ppp58et9xyS+y3335x3nnn5VtL9QQIECBAgAABAgQIECBAgECbAlXN0dC1a9eYO3dujB8/Pu6+++7sVW4t3VaxadOm7GP//v3jtttui91226282U8CBAgQIECAAAECBAgQIECggAJVXdGQPIYPHx5pUsiZM2fGqFGjokePHhnT5s2bY+jQoTFp0qR4/vnn47jjjqua7+abb86CjapP5AQECBAgQIAAAQIECBAgQIDADhGoKmhYvHhxFiDcddddMWXKlPj9738fGzZsiCVLlsRbb70VL730UsyZMyeGDBmyQ4p3UgIECBAgQIAAAQIECBAgQKC+BKoKGlLA8NBDD8U999xT6VW3bt0i3TbRu3fvyjpvCBAgQIAAAQIECBAgQIAAgZ1DoKqg4bXXXsuU3ve+9+0cWnpJgAABAgQIECBAgAABAgQItClQVdBw7rnnRr9+/eInP/lJNk9Dmy3ZSIAAAQIECBAgQIAAAQIECBReoKqnTqSnSEybNi2mT58eRx55ZBx11FExcuTISFc4pCdSNF9OOOGESC8LAQIECBAgQIAAAQIECBAgUEyBqoKG++67Ly655JKKzMKFCyO9Wlu6dOkiaGgNx3oCBAgQIECAAAECBAgQIFAAgaqChsMPPzymTp3abobOeMRluxuzIwECBAgQIECAAAECBAgQIPCeC1QVNKTbJdLLQoAAAQIECBAgQIAAAQIECBBIAltPpNCGy5VXXhmTJ0+OTZs2tbGXTQQIECBAgAABAgQIECBAgMDOKtChoGH27NlxzTXXCBp21j8t+k2AAAECBAgQIECAAAECBLYh0KGgYRvnspkAAQIECBAgQIAAAQIECBDYyQUEDTv5HwDdJ0CAAAECBAgQIECAAAECnSkgaOhMTeciQIAAAQIECBAgQIAAAQI7ucB2PXXi5Zdfjl122aXDdP369Yv0shAgQIAAAQIECBAgQIAAAQLFFNiuoOEDH/jAdmlcccUVMW3atO061kEECBAgQIAAAQIECBAgQIBA/Qu4daL+x0iFBAgQIECAAAECBAgQIEAgNwLbdUXDihUrtuvWiV69euUGRqEECBAgQIAAAQIECBAgQIBAxwW2K2hI8yxszxwNHS/PEQQIECBAgAABAgQIECBAgECeBNw6kafRUisBAgQIECBAgAABAgQIEKhzAUFDnQ+Q8ggQIECAAAECBAgQIECAQJ4EBA15Gi21EiBAgAABAgQIECBAgACBOhfo0BwNU6ZMiXXr1kWPHj3qvFvKI0CAAAECBAgQIECAAAECBGoh0KGg4Wtf+1otatQmAQIECBAgQIAAAQIECBAgkBMBt07kZKCUSYAAAQIECBAgQIAAAQIE8iAgaMjDKKmRAAECBAgQIECAAAECBAjkREDQkJOBUiYBAgQIECBAgAABAgQIEMiDgKAhD6OkRgIECBAgQIAAAQIECBAgkBMBQUNOBkqZBAgQIECAAAECBAgQIEAgDwKChjyMkhoJECBAgAABAgQIECBAgEBOBAQNORkoZRIgQIAAAQIECBAgQIAAgTwICBryMEpqJECAAAECBAgQIECAAAECOREQNORkoJRJgAABAgQIECBAgAABAgTyICBoyMMoqZEAAQIECBAgQIAAAQIECOREQNCQk4FSJgECBAgQIECAAAECBAgQyIOAoCEPo6RGAgQIECBAgAABAgQIECCQEwFBQ04GSpkECBAgQIAAAQIECBAgQCAPAoKGPIySGgkQIECAAAECBAgQIECAQE4EBA05GShlEiBAgAABAgQIECBAgACBPAgIGvIwSmokQIAAAQIECBAgQIAAAQI5ERA05GSglEmAAAECBAgQIECAAAECLP25nAAAInpJREFUBPIgIGjIwyipkQABAgQIECBAgAABAgQI5ERA0JCTgVImAQIECBAgQIAAAQIECBDIg4CgIQ+jpEYCBAgQIECAAAECBAgQIJATAUFDTgZKmQQIECBAgAABAgQIECBAIA8CgoY8jJIaCRAgQIAAAQIECBAgQIBATgQEDTkZKGUSIECAAAECBAgQIECAAIE8CAga8jBKaiRAgAABAgQIECBAgAABAjkREDTkZKCUSYAAAQIECBAgQIAAAQIE8iAgaMjDKKmRAAECBAgQIECAAAECBAjkREDQkJOBUiYBAgQIECBAgAABAgQIEMiDgKAhD6OkRgIECBAgQIAAAQIECBAgkBMBQUNOBkqZBAgQIECAAAECBAgQIEAgDwKChjyMkhoJECBAgAABAgQIECBAgEBOBAQNORkoZRIgQIAAAQIECBAgQIAAgTwICBryMEpqJECAAAECBAgQIECAAAECOREQNORkoJRJgAABAgQIECBAgAABAgTyICBoyMMoqZEAAQIECBAgQIAAAQIECOREQNCQk4FSJgECBAgQIECAAAECBAgQyIOAoCEPo6RGAgQIECBAgAABAgQIECCQEwFBQ04GSpkECBAgQIAAAQIECBAgQCAPAoKGPIySGgkQIECAAAECBAgQIECAQE4EBA05GShlEiBAgAABAgQIECBAgACBPAgIGvIwSmokQIAAAQIECBAgQIAAAQI5ERA05GSglEmAAAECBAgQIECAAAECBPIgIGjIwyipkQABAgQIECBAgAABAgQI5ERA0JCTgVImAQIECBAgQIAAAQIECBDIg4CgIQ+jpEYCBAgQIECAAAECBAgQIJATAUFDTgZKmQQIECBAgAABAgQIECBAIA8CgoY8jJIaCRAgQIAAAQIECBAgQIBATgQEDTkZKGUSIECAAAECBAgQIECAAIE8CHTPQ5GdUWNDQ0MsX768M07lHAQIECBAIJcCy5Yty2XdiiZAgAABAh0V8Duvo2Jt7z9gwIDYdddd296p0dadJmjo0qVLDB48uFHXvSVAgAABAjuXgN+DO9d46y0BAgR2ZgG/8zp39Lt169ahE+40QUNS6d59p+puh/4g2JkAAQIEii/g92Dxx1gPCRAgQOB/BfzOq+2fBHM01NZf6wQIECBAgAABAgQIECBAoFACgoZCDafOECBAgAABAgQIECBAgACB2goIGmrrr3UCBAgQIECAAAECBAgQIFAoAUFDoYZTZwgQIECAAAECBAgQIECAQG0FBA219dc6AQIECBAgQIAAAQIECBAolICgoVDDqTMECBAgQIAAAQIECBAgQKC2AoKG2vprnQABAgQIECBAgAABAgQIFEpA0FCo4dQZAgQIECBAgAABAgQIECBQWwFBQ239tU6AAAECBAgQIECAAAECBAolIGgo1HDqDAECBAgQIECAAAECBAgQqK2AoKG2/lonQIAAAQIECBAgQIAAAQKFEhA0FGo4dYYAAQIECBAgQIAAAQIECNRWQNBQW3+tEyBAgAABAgQIECBAgACBQgkIGgo1nDpDgAABAgQIECBAgAABAgRqKyBoqK2/1gkQIECAAAECBAgQIECAQKEEBA2FGk6dIUCAAAECBAgQIECAAAECtRUQNNTWX+sECBAgQIAAAQIECBAgQKBQAoKGQg2nzhAgQIAAAQIECBAgQIAAgdoKCBpq6691AgQIECBAgAABAgQIECBQKAFBQ6GGU2cIECBAgAABAgQIECBAgEBtBQQNtfXXOgECBAgQIECAAAECBAgQKJSAoKFQw6kzBAgQIECAAAECBAgQIECgtgKChtr6a50AAQIECBAgQIAAAQIECBRKQNBQqOHUGQIECBAgQIAAAQIECBAgUFsBQUNt/bVOgAABAgQIECBAgAABAgQKJSBoKNRw6gwBAgQIECBAgAABAgQIEKitgKChtv5aJ0CAAAECBAgQIECAAAEChRIQNBRqOHWGAAECBAgQIECAAAECBAjUVkDQUFt/rRMgQIAAAQIECBAgQIAAgUIJCBoKNZw6Q4AAAQIECBAgQIAAAQIEaisgaKitv9YJECBAgAABAgQIECBAgEChBAQNhRpOnSFAgAABAgQIECBAgAABArUVEDTU1l/rBAgQIECAAAECBAgQIECgUAKChkINp84QIECAAAECBAgQIECAAIHaCggaauuvdQIECBAgQIAAAQIECBAgUCgBQUOhhlNnCBAgQIAAAQIECBAgQIBAbQUEDbX11zoBAgQIECBAgAABAgQIECiUgKChUMOpMwQIECBAgAABAgQIECBAoLYCgoba+mudAAECBAgQIECAAAECBAgUSkDQUKjh1BkCBAgQIECAAAECBAgQIFBbAUFDbf21ToAAAQIECBAgQIAAAQIECiUgaCjUcOoMAQIECBAgQIAAAQIECBCorYCgobb+WidAgAABAgQIECBAgAABAoUSEDQUajh1hgABAgQIECBAgAABAgQI1FZA0FBbf60TIECAAAECBAgQIECAAIFCCQgaCjWcOkOAAAECBAgQIECAAAECBGorIGiorb/WCRAgQIAAAQIECBAgQIBAoQQEDYUaTp0hQIAAAQIECBAgQIAAAQK1FRA01NZf6wQIECBAgAABAgQIECBAoFACgoZCDafOECBAgAABAgQIECBAgACB2goIGmrrr3UCBAgQIECAAAECBAgQIFAoAUFDoYZTZwgQIECAAAECBAgQIECAQG0FBA219dc6AQIECBAgQIAAAQIECBAolICgoVDDqTMECBAgQIAAAQIECBAgQKC2AoKG2vprnQABAgQIECBAgAABAgQIFEpA0FCo4dQZAgQIECBAgAABAgQIECBQWwFBQ239tU6AAAECBAgQIECAAAECBAolIGgo1HDqDAECBAgQIECAAAECBAgQqK2AoKG2/lonQIAAAQIECBAgQIAAAQKFEhA0FGo4dYYAAQIECBAgQIAAAQIECNRWQNBQW3+tEyBAgAABAgQIECBAgACBQgkIGgo1nDpDgAABAgQIECBAgAABAgRqKyBoqK2/1gkQIECAAAECBAgQIECAQKEEBA2FGk6dIUCAAAECBAgQIECAAAECtRUQNNTWX+sECBAgQIAAAQIECBAgQKBQAoKGQg2nzhAgQIAAAQIECBAgQIAAgdoKCBpq6691AgQIECBAgAABAgQIECBQKAFBQ6GGU2cIECBAgAABAgQIECBAgEBtBQQNtfXXOgECBAgQIECAAAECBAgQKJRAboKGjRs3xptvvlkofJ0hQIAAAQIECBAgQIAAAQJFE+he7x169tlnY968efHII4/E22+/HcOGDYtvf/vbccghh9R76eojQIAAAQIECBAgQIAAAQI7nUBdX9Gwfv36mDp1arzyyitx1VVXxfe+973Ydddd45vf/Ga88MILO91g6TABAgQIECBAgAABAgQIEKh3gboOGubMmRMrV66Mq6++Oo4++ujsdd1110WXLl1i/vz59W6rPgIECBAgQIAAAQIECBAgsNMJ1HXQcP/998cRRxwRe+65Z2Vgdttttxg7dmw8+OCDkeZtsBAgQIAAAQIECBAgQIAAAQL1I1C3czSsWrUq3njjjRg+fPhWWmldCiGWLFkSo0aN2mp7ays2bdrU2ibrCRAgQIBA4QX8Hiz8EOsgAQIECPyfgN95nftHoVu3btmdBe09a90GDeUnTPTv33+rvvTr1y9bV95nqx1aWNHQ0BApvLAQIECAAIGdVcDvwZ115PWbAAECO5+A33mdO+YDBgzI5kts71nrNmhIT5hIS7pVovnSp0+fbNU777zTfJPP76HAC3/30fewNU0RIECAAIHaCvi9V1t/rRMgQIBAfgTqNmhIiUla0pMnmi/ldbvsskvzTa1+ThNIDhkypNXtNhAgQIAAAQIECBAgQIAAAQJbC3Tt2rHpHes2aBg0aFDWuzVr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WhcQNLRuYwsBAjkVaBw2lOdsSGGDkCGnA6psAgQIEGhToBw2NJ6zYdddd83mZHAlQ5t0NhIgsIME3Dqxg2CdlgCB2gs0vo1i4sSJ2dMn3C5R+3FRAQECBAjsGIHybRR77rln9sjn9ESm9MQlczLsGG9nJUCgdQFBQ+s2thAgUACBxmFD+ovXjTfe6HFeBRhXXSBAgACBlgXKYUPaKmRo2chaAgR2vICgYccba4EAgRoLpLBh1qxZcemllwoZajwWmm9b4LXXXouf/exnbe/UaOuIESPixBNPbLRmx76dM2dObNmyJSZNmhTdunXbsY05OwEC2y2Qwob169e7kmG7BR1IgEC1AoKGagUdT4AAAQIEOkngySefjPS0lPYup59+eoeCifaet7X9evbsGe+++272BSbd/23ZfoGNGzfG1VdfHaNGjYrPfe5z238iRxIgQIAAgToU6F6HNSmJAAECBAjs1AJdu3bNrsDZFsIhhxyyrV06dfuQIUOyoKFLly6det6d8WTf+MY34uabb45bb711Z+y+PhMgQIBAwQUEDQUfYN0jQIAAgfwJpKAh/Wt3vS0vv/xyvZWU23reeeedrHahTW6HUOEECBAg0IZA1za22USAAAECBAjkXGD58uWxefPm96wXq1evbrOtFStWZLdetLlTs40bNmyIbZ232SGxZs2aSLcntLSsXbs23njjjZY2bbVu06ZN8corr0RDQ8NW29pa8V67t1WLbQQIECBA4L0WEDS81+LaI0CAAAECO0hg+PDhcdJJJ1Umgdt7772zCVD79u2bTRr5hz/8odJymiB13333jb/5m7+prGv8Jn1R33///eMDH/hAvPXWW9mm9DkdU/4CnyaGTJ8//vGPxyOPPBL77bdfDBw4MD784Q/Ho48+WjlduhLi85//fOy+++6x1157Rarngx/8YHz/+9/PJpes7Fh684Mf/CA757333hv/9m//FkcddVT0798/O++wYcOyY5p/6S8f8+tf/zruvPPO+LM/+7PYY489YsCAAXHCCSfEb3/726yJtP3oo4/O6ki1pPkRHnjggcbNV97/6le/ys6z2267xfve977smE984hPR2LC8c0fcV61alfXvpz/9aXb4t771rezzvHnzyqfzkwABAgQI5F5A0JD7IdQBAgQIECDwvwJLly6NF154IT760Y9GmnX+yCOPjL/4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0lUfKTSpdvnqV78aDzzwQNx///2xaNGiSPNZCBqqVXU8AQIECNSLQJfSY67+/3Ou6qUqdRAgQIAAAQKFE0iTLD7zzDPZoyv33nvvXPRv+fLl2TwSe+21V+y7775bPRKz2k5s2LAhe6Rmmoiy/CjOas/peAIECBAgUGsBQUOtR0D7BAgQIECAAAECBAgQIECgQAImgyzQYOoKAQIECBAgQIAAAQIECBCotYCgodYjoH0CBAgQIECAAAECBAgQIFAgAUFDgQZTVwgQIECAAAECBAgQIECAQK0FBA21HgHtEyBAgAABAgQIECBAgACBAgkIGgo0mLpCgAABAgQIECBAgAABAgRqLSBoqPUIaJ8AAQIECBAgQIAAAQIECBRIQNBQoMHUFQIECBAgQIAAAQIECBAgUGsBQUOtR0D7BAgQIECAAAECBAgQIECgQAKChgINpq4QIECAAAECBAgQIECAAIFaCwgaaj0C2idAgAABAgQIECBAgAABAgUSEDQUaDB1hQABAgQIECBAgAABAgQI1FpA0FDrEdA+AQIECBAgQIAAAQIECBAokICgoUCDqSsECBAgQIAAAQIECBAgQKDWAoKGWo+A9gkQIECAAAECBAgQIECAQIEE/h/QobfK3EjljgAAAABJRU5ErkJggg==" alt="Genotypes observed per environment (E1, E2) for the toy multi-environment trial; the subtitle carries connectivity status, component count, and the recovered within-environment design." />
+<div class="figcaption">Genotypes observed per environment (E1, E2) for
+the toy multi-environment trial; the subtitle carries connectivity
+status, component count, and the recovered within-environment
+design.</div>
+</div>
+<p>Both bars are at three treatments, since every genotype in this toy
+trial appears in both environments. A shorter bar, or a subtitle
+reporting more than one component, marks environments that cannot go
+into one connected analysis until you have checked whether the missing
+coverage is real or an artefact of how the table was put together.</p>
+<p>High-confidence environment columns feed the masking plan
+directly:</p>
+<ul>
+<li>Local mode keeps environment values byte-identical.</li>
+<li>Collaborate mode aliases categorical environment labels in place, so
+each row stays in its environment and missing values stay where they
+were. The recipe turns the aliases back into the real labels.</li>
+</ul>
+<p>A numeric environment, such as year, stays at <code>keep</code> and
+raises a disclosure warning because its values are still visible. The
+toy’s <code>env</code> column is categorical:</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a>met_roles <span class="ot">&lt;-</span> <span class="fu">propose_roles</span>(met, <span class="at">mode =</span> <span class="st">&quot;collaborate&quot;</span>)</span>
+<span id="cb21-2"><a href="#cb21-2" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(</span>
+<span id="cb21-3"><a href="#cb21-3" tabindex="-1"></a>  met_roles[met_roles<span class="sc">$</span>col <span class="sc">==</span> <span class="st">&quot;env&quot;</span>, <span class="fu">c</span>(<span class="st">&quot;col&quot;</span>, <span class="st">&quot;role&quot;</span>, <span class="st">&quot;action&quot;</span>)],</span>
+<span id="cb21-4"><a href="#cb21-4" tabindex="-1"></a>  <span class="at">caption =</span> <span class="st">&quot;How the masking plan treats the `env` column.&quot;</span></span>
+<span id="cb21-5"><a href="#cb21-5" tabindex="-1"></a>)</span></code></pre></div>
+<table>
+<caption>How the masking plan treats the <code>env</code>
+column.</caption>
+<thead>
+<tr class="header">
+<th align="left">col</th>
+<th align="left">role</th>
+<th align="left">action</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">env</td>
+<td align="left">design</td>
+<td align="left">alias</td>
+</tr>
+</tbody>
+</table>
+<p>This safeguard protects the allocation a pipeline reads. It does not
+imply that the synthesised outcomes preserve genotype-by-environment
+effects: sparse treatment-by-environment cells may fall back to pooled
+synthesis, and the clone must not be used as a substitute for the
+original trial in scientific inference.</p>
+</div>
+</div>
+<div id="results" class="section level2">
+<h2>Results</h2>
+<p>On this trial the audit, counting its column and table-level checks
+together, gave 0 HIGH and 0 medium findings. A HIGH finding would stop
+the package writing the synthetic to disk. A design column left at
+<code>keep</code> comes back unchanged and an aliased treatment comes
+back as <code>trt_001</code> to <code>trt_024</code>; a plan that asks
+for something the package cannot do is refused before it runs. Related
+tables are masked together and still join.</p>
+<p>The agronomist can therefore hand over a clone that keeps the plot
+layout and the links between tables, with the genotype labels aliased,
+and the statistician can build a full pipeline on it without seeing the
+real genotype names. How the finished pipeline runs on the real data is
+covered in <em>Recipe anatomy and the round-trip</em>.</p>
+</div>
+<div id="limits" class="section level2">
+<h2>Limits</h2>
+<p>This vignette shows the custodian’s side of the handoff, on one small
+public trial with a clean, complete design; it does not exercise the
+leakage audit’s failure modes, the geographic-coordinate controls, or
+the conditional clone that preserves a treatment effect rather than only
+a marginal distribution, all of which live in <em>Confidentiality and
+the threat model</em>. A sensitive column with an ordinary name is
+caught only if someone flags it by hand. Multi-environment detection can
+miss a real environment when the names and replication are ambiguous;
+prefer an explicit <code>env</code> whenever you know better. Only one
+numeric column is re-simulated here, so the vignette does not show what
+the Gaussian copula keeps of the relationships between columns; that is
+also in <em>Confidentiality and the threat model</em>.</p>
+</div>
+<div id="what-to-read-next" class="section level2">
+<h2>What to read next</h2>
+<p><em>Confidentiality and the threat model</em> sets out exactly what a
+synthetic clone protects and what it does not, the depth controls beyond
+role and action, the leakage audit, and the conditional clone that
+preserves a treatment-to-outcome relationship. <em>Recipe anatomy and
+the round-trip</em> is the analyst’s side of this handoff: what the
+recipe carries, and how a pipeline built on the synthetic re-targets to
+the original. <em>What a conditional clone keeps of the design</em>
+tests what a model fitted on a conditional clone still finds, on eight
+field designs.</p>
+</div>
+<div id="reproduce" class="section level2">
+<h2>Reproduce</h2>
+<p><code>set.seed(1)</code> is set once for the document, and every
+<code>masque()</code> or <code>mask()</code> call passes
+<code>seed = 1L</code>, so each is reproducible on its own. Package
+versions follow.</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span>
+<span id="cb22-2"><a href="#cb22-2" tabindex="-1"></a><span class="co">#&gt; R version 4.6.1 (2026-06-24)</span></span>
+<span id="cb22-3"><a href="#cb22-3" tabindex="-1"></a><span class="co">#&gt; Platform: aarch64-apple-darwin23</span></span>
+<span id="cb22-4"><a href="#cb22-4" tabindex="-1"></a><span class="co">#&gt; Running under: macOS Tahoe 26.7.1</span></span>
+<span id="cb22-5"><a href="#cb22-5" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb22-6"><a href="#cb22-6" tabindex="-1"></a><span class="co">#&gt; Matrix products: default</span></span>
+<span id="cb22-7"><a href="#cb22-7" tabindex="-1"></a><span class="co">#&gt; BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRblas.0.dylib </span></span>
+<span id="cb22-8"><a href="#cb22-8" tabindex="-1"></a><span class="co">#&gt; LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1</span></span>
+<span id="cb22-9"><a href="#cb22-9" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb22-10"><a href="#cb22-10" tabindex="-1"></a><span class="co">#&gt; locale:</span></span>
+<span id="cb22-11"><a href="#cb22-11" tabindex="-1"></a><span class="co">#&gt; [1] C/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8</span></span>
+<span id="cb22-12"><a href="#cb22-12" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb22-13"><a href="#cb22-13" tabindex="-1"></a><span class="co">#&gt; time zone: Australia/Adelaide</span></span>
+<span id="cb22-14"><a href="#cb22-14" tabindex="-1"></a><span class="co">#&gt; tzcode source: internal</span></span>
+<span id="cb22-15"><a href="#cb22-15" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb22-16"><a href="#cb22-16" tabindex="-1"></a><span class="co">#&gt; attached base packages:</span></span>
+<span id="cb22-17"><a href="#cb22-17" tabindex="-1"></a><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     </span></span>
+<span id="cb22-18"><a href="#cb22-18" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb22-19"><a href="#cb22-19" tabindex="-1"></a><span class="co">#&gt; other attached packages:</span></span>
+<span id="cb22-20"><a href="#cb22-20" tabindex="-1"></a><span class="co">#&gt; [1] masque_0.16.0</span></span>
+<span id="cb22-21"><a href="#cb22-21" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb22-22"><a href="#cb22-22" tabindex="-1"></a><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
+<span id="cb22-23"><a href="#cb22-23" tabindex="-1"></a><span class="co">#&gt;  [1] vctrs_0.7.3         cli_3.6.6           knitr_1.51          rlang_1.3.0        </span></span>
+<span id="cb22-24"><a href="#cb22-24" tabindex="-1"></a><span class="co">#&gt;  [5] xfun_0.60           otel_0.2.0          generics_0.1.4      S7_0.2.2           </span></span>
+<span id="cb22-25"><a href="#cb22-25" tabindex="-1"></a><span class="co">#&gt;  [9] jsonlite_2.0.0      data.table_1.18.6.1 labeling_0.4.3      glue_1.8.1         </span></span>
+<span id="cb22-26"><a href="#cb22-26" tabindex="-1"></a><span class="co">#&gt; [13] htmltools_0.5.9     sass_0.4.10         scales_1.4.0        rmarkdown_2.32     </span></span>
+<span id="cb22-27"><a href="#cb22-27" tabindex="-1"></a><span class="co">#&gt; [17] grid_4.6.1          tibble_3.3.1        evaluate_1.0.5      jquerylib_0.1.4    </span></span>
+<span id="cb22-28"><a href="#cb22-28" tabindex="-1"></a><span class="co">#&gt; [21] fastmap_1.2.0       yaml_2.3.12         lifecycle_1.0.5     compiler_4.6.1     </span></span>
+<span id="cb22-29"><a href="#cb22-29" tabindex="-1"></a><span class="co">#&gt; [25] dplyr_1.2.1         RColorBrewer_1.1-3  pkgconfig_2.0.3     maps_3.4.3         </span></span>
+<span id="cb22-30"><a href="#cb22-30" tabindex="-1"></a><span class="co">#&gt; [29] farver_2.1.2        digest_0.6.39       viridisLite_0.4.3   R6_2.6.1           </span></span>
+<span id="cb22-31"><a href="#cb22-31" tabindex="-1"></a><span class="co">#&gt; [33] tidyselect_1.2.1    dichromat_2.0-1     pillar_1.11.1       magrittr_2.0.5     </span></span>
+<span id="cb22-32"><a href="#cb22-32" tabindex="-1"></a><span class="co">#&gt; [37] bslib_0.12.0        tools_4.6.1         withr_3.0.3         gtable_0.3.6       </span></span>
+<span id="cb22-33"><a href="#cb22-33" tabindex="-1"></a><span class="co">#&gt; [41] agridat_1.26        ggplot2_4.0.3       cachem_1.1.0</span></span></code></pre></div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

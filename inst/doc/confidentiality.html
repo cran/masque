@@ -1,0 +1,1644 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Confidentiality and the threat model</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Confidentiality and the threat model</h1>
+
+
+
+<!-- Render time: ~4 s under rmarkdown::render(); macOS arm64, R 4.5.2, one
+     core. Dominated by the copula fits in the conditional-clone and
+     non-monotone sections; no sampler runs. -->
+<div id="why" class="section level2">
+<h2>Why</h2>
+<p>A custodian about to send a synthetic table to a collaborator needs
+to know what it protects, what it does not, and what happens if a
+column’s sensitivity is set wrongly. This vignette covers all three,
+with examples that trigger the package’s safeguards.</p>
+<p><code>masque</code> is <strong>not</strong> a privacy-preserving or
+differential-privacy tool. It is a structurally faithful development
+surrogate. Read this vignette before sharing any <code>masque</code>
+output beyond your own machine.</p>
+</div>
+<div id="what" class="section level2">
+<h2>What</h2>
+<p>The recipe holds the real labels, the original column names and the
+seed. With the synthetic it undoes every alias, so keep it with the
+original data and never send it with the synthetic. The design assumes
+that only the <em>synthetic</em> crosses the trust boundary:</p>
+<table>
+<colgroup>
+<col width="33%" />
+<col width="33%" />
+<col width="33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Actor holds</th>
+<th>Wants to learn</th>
+<th>What <code>masque</code> protects</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Synthetic only</td>
+<td>Original raw values</td>
+<td>Aliased treatment and categorical vocabularies, jittered numerics,
+dropped ids and free text, and optionally the column names</td>
+</tr>
+<tr class="even">
+<td>Synthetic + recipe</td>
+<td>Original raw values</td>
+<td>Nothing: together they undo every alias</td>
+</tr>
+<tr class="odd">
+<td>Recipe only</td>
+<td>Original raw values</td>
+<td>The values, which the recipe does not hold. It does hold the real
+labels, the original column names and the seed</td>
+</tr>
+<tr class="even">
+<td>Synthetic + external side information</td>
+<td>Identity of treatments / sites</td>
+<td>The label vocabulary and the order it was in. A preserved design
+footprint or a <code>keep</code> column is recognisable, level
+frequencies are unchanged, and side information wins</td>
+</tr>
+<tr class="odd">
+<td>Conditional clone (<code>conditional = TRUE</code>)</td>
+<td>Outcome mean of a treatment or design level</td>
+<td>Nothing: the clone reproduces the outcome mean of each treatment,
+block and environment level. A level with only a few plots reveals close
+to its real mean; a level with a single plot is pooled with the other
+single-plot levels first</td>
+</tr>
+</tbody>
+</table>
+<p><code>masque</code> keeps enough structure for a pipeline to run
+unchanged. Two modes set the balance between privacy and fidelity, every
+translation is written to a private recipe that round-trips, and the
+output is audited before it is shared.</p>
+<p>It gives no differential-privacy guarantee and does not make output
+safe for public release. It does not hide rare strata, small designs,
+thin site-by-year cells or contact names, and it does not change
+pipeline code.</p>
+<p>Every column carries a <code>role</code> (what it is) and an
+<code>action</code> (how deeply it is masked, from
+<code>role_options()</code>’s validated grid: <code>keep</code>,
+<code>scramble</code>, <code>alias</code>, <code>drop</code>).
+<code>mask()</code>’s <code>mode</code> argument chooses sensible
+defaults for both, so the common case is safe without per-column
+work:</p>
+<table>
+<colgroup>
+<col width="33%" />
+<col width="33%" />
+<col width="33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Knob</th>
+<th><code>mode = &quot;local&quot;</code></th>
+<th><code>mode = &quot;collaborate&quot;</code></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Treatment labels, numeric doses included</td>
+<td>kept</td>
+<td>aliased (<code>trt_001</code>)</td>
+</tr>
+<tr class="even">
+<td>Categorical covariate labels</td>
+<td>kept</td>
+<td>aliased (<code>&lt;col&gt;_L001</code>)</td>
+</tr>
+<tr class="odd">
+<td>Date / time columns</td>
+<td>row-permuted with class preserved</td>
+<td>row-permuted with class preserved</td>
+</tr>
+<tr class="even">
+<td>Identifiers (<code>id</code>)</td>
+<td>kept</td>
+<td>dropped</td>
+</tr>
+<tr class="odd">
+<td>Free text (<code>text</code>: a character column in which more than
+half the values are distinct)</td>
+<td>kept</td>
+<td>dropped</td>
+</tr>
+<tr class="even">
+<td>Numeric synthesis</td>
+<td>Gaussian copula with empirical-quantile marginals (may emit observed
+values)</td>
+<td>the same, plus within-resolution jitter, with whole numbers
+stochastically rounded. A value can fall up to half a measurement step
+outside the observed range</td>
+</tr>
+<tr class="odd">
+<td>Columns constant within a design unit</td>
+<td>one value per unit, drawn from the real unit values</td>
+<td>one value per unit, jittered, or row by row when there are fewer
+than five units</td>
+</tr>
+<tr class="even">
+<td>NA mask</td>
+<td>preserved cell-by-cell</td>
+<td>preserved cell-by-cell</td>
+</tr>
+<tr class="odd">
+<td><code>audit_mask()</code></td>
+<td>on demand</td>
+<td>automatic at <code>mask()</code> time</td>
+</tr>
+<tr class="even">
+<td><code>print(recipe)</code></td>
+<td>redacted</td>
+<td>redacted, with explicit <code>reveal_maps()</code> to inspect</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="example" class="section level2">
+<h2>Example</h2>
+<div id="depth-controls-hiding-design-structure" class="section level3">
+<h3>Depth controls: hiding design structure</h3>
+<p>Design columns are byte-identical by default, which preserves the
+experimental layout exactly. A publicly registered trial layout is a
+fingerprint. To keep the structure but hide the site or block
+<em>labels</em>, set a design column’s action to <code>alias</code>:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>  <span class="at">site =</span> <span class="fu">factor</span>(<span class="fu">rep</span>(<span class="fu">c</span>(<span class="st">&quot;Roseworthy&quot;</span>, <span class="st">&quot;Minnipa&quot;</span>, <span class="st">&quot;Turretfield&quot;</span>), <span class="at">each =</span> <span class="dv">6</span><span class="dt">L</span>)),</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>  <span class="at">rep =</span> <span class="fu">rep</span>(<span class="fu">seq_len</span>(<span class="dv">3</span><span class="dt">L</span>), <span class="dv">6</span><span class="dt">L</span>),</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>  <span class="at">yield =</span> <span class="fu">rnorm</span>(<span class="dv">18</span><span class="dt">L</span>)</span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a>)</span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a>plan <span class="ot">&lt;-</span> <span class="fu">propose_roles</span>(df, <span class="at">detect =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a>plan <span class="ot">&lt;-</span> <span class="fu">set_role</span>(plan, <span class="st">&quot;site&quot;</span>, <span class="at">role =</span> <span class="st">&quot;design&quot;</span>, <span class="at">action =</span> <span class="st">&quot;alias&quot;</span>)</span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a>s <span class="ot">&lt;-</span> <span class="fu">synthetic</span>(<span class="fu">mask</span>(df, plan, <span class="at">mode =</span> <span class="st">&quot;collaborate&quot;</span>, <span class="at">seed =</span> <span class="dv">1</span><span class="dt">L</span>))</span>
+<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a>site_names_gone <span class="ot">&lt;-</span> <span class="sc">!</span><span class="fu">any</span>(<span class="fu">as.character</span>(s<span class="sc">$</span>site) <span class="sc">%in%</span> <span class="fu">as.character</span>(df<span class="sc">$</span>site))</span>
+<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a>site_names_gone</span>
+<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
+<span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(</span>
+<span id="cb1-13"><a href="#cb1-13" tabindex="-1"></a>  <span class="fu">as.data.frame</span>(<span class="fu">table</span>(s<span class="sc">$</span>site), <span class="at">stringsAsFactors =</span> <span class="cn">FALSE</span>),</span>
+<span id="cb1-14"><a href="#cb1-14" tabindex="-1"></a>  <span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">&quot;aliased site&quot;</span>, <span class="st">&quot;plots&quot;</span>),</span>
+<span id="cb1-15"><a href="#cb1-15" tabindex="-1"></a>  <span class="at">caption =</span> <span class="st">&quot;The three-site structure survives even though the labels do not.&quot;</span></span>
+<span id="cb1-16"><a href="#cb1-16" tabindex="-1"></a>)</span></code></pre></div>
+<table>
+<caption>The three-site structure survives even though the labels do
+not.</caption>
+<thead>
+<tr class="header">
+<th align="left">aliased site</th>
+<th align="right">plots</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">site_D001</td>
+<td align="right">6</td>
+</tr>
+<tr class="even">
+<td align="left">site_D002</td>
+<td align="right">6</td>
+</tr>
+<tr class="odd">
+<td align="left">site_D003</td>
+<td align="right">6</td>
+</tr>
+</tbody>
+</table>
+<p>Aliasing a design column breaks byte-identity, so it is never a
+default. Names can be hidden the same way:
+<code>mask(..., alias_names = TRUE)</code> replaces every retained
+column name with an opaque code that the recipe inverts on the
+round-trip, and a character vector hides only the names given.</p>
+<p><strong>What an alias does and does not hide.</strong> The alias
+vocabulary is fixed and sorted (<code>trt_001</code>,
+<code>trt_002</code>, …), but which level receives which alias is drawn
+from a random permutation, so for a six-level column there are 720
+equally likely maps. This matters because the vocabularies in field
+research are routinely public: a variety roster, an N-rate ladder, a
+site list. The same draw governs the join keys <code>mask_set()</code>
+shares across tables. A scrambled factor keeps the original level order,
+so <code>levels()</code> of a clone does not reveal the map.</p>
+<p>Clones made with earlier versions can reveal it. In masque 0.13.0 and
+earlier, a scrambled treatment listed its levels in the scrambled order.
+In 0.12.0 and 0.13.0, a join key aliased by <code>mask_set()</code>
+listed its aliases in the original level order. Make such a clone again
+with 0.14.0.</p>
+<p>Two limits go with that, and they are the custodian’s to manage:</p>
+<ul>
+<li><strong>The seed is confidential material.</strong> The permutation
+comes from the seeded stream, so <code>mask(seed = 1L)</code> reproduces
+the same map, exactly as it reproduces the same synthetic values.
+Publishing the seed beside the synthetic re-opens the inversion for
+anyone who can also reproduce the draw. Keep the seed with the recipe,
+or pass <code>seed = NULL</code> where reproducibility is not required
+and take a fresh map each call.</li>
+<li><strong>Frequencies are not hidden.</strong> Aliasing is a bijection
+on labels: the count of each level is unchanged by design, because the
+design footprint is what makes the clone useful. A vocabulary whose
+level counts are known and distinct is still matchable one level at a
+time. <code>audit_mask()</code> reports those counts so the exposure is
+visible rather than implicit.</li>
+</ul>
+<p>An alias therefore raises the cost of re-identification. It cannot be
+relied on against a determined attacker, and none of it is a
+differential-privacy guarantee.</p>
+</div>
+<div id="numeric-treatments" class="section level3">
+<h3>Numeric treatments</h3>
+<p>A dose or a nitrogen rate is a numeric treatment. Its values are
+often the most recognisable part of a trial, so collaborate mode aliases
+them by default, as it does treatment labels. The clone carries
+<code>trt_001</code>, <code>trt_002</code>, … as text, and the recipe
+turns them back into the exact numbers:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>rates <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>  <span class="at">block =</span> <span class="fu">factor</span>(<span class="fu">rep</span>(<span class="fu">seq_len</span>(<span class="dv">4</span><span class="dt">L</span>), <span class="at">each =</span> <span class="dv">5</span><span class="dt">L</span>)),</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>  <span class="at">nitro =</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.2</span>, <span class="fl">0.4</span>, <span class="fl">0.6</span>, <span class="fl">0.8</span>), <span class="dv">4</span><span class="dt">L</span>)</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>)</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>rates<span class="sc">$</span>yield <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="dv">80</span> <span class="sc">+</span> <span class="dv">40</span> <span class="sc">*</span> rates<span class="sc">$</span>nitro <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="dv">20</span><span class="dt">L</span>, <span class="at">sd =</span> <span class="dv">5</span>), <span class="dv">1</span>)</span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>plan_rates <span class="ot">&lt;-</span> <span class="fu">propose_roles</span>(rates, <span class="at">mode =</span> <span class="st">&quot;collaborate&quot;</span>)</span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>m_rates <span class="ot">&lt;-</span> <span class="fu">mask</span>(rates, plan_rates, <span class="at">mode =</span> <span class="st">&quot;collaborate&quot;</span>, <span class="at">seed =</span> <span class="dv">1</span><span class="dt">L</span>)</span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(</span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a>  <span class="fu">head</span>(<span class="fu">synthetic</span>(m_rates), <span class="dv">5</span><span class="dt">L</span>),</span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a>  <span class="at">digits =</span> <span class="dv">1</span>,</span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a>  <span class="at">caption =</span> <span class="st">&quot;The first block of the clone: each N rate is an opaque label.&quot;</span></span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a>)</span></code></pre></div>
+<table>
+<caption>The first block of the clone: each N rate is an opaque
+label.</caption>
+<thead>
+<tr class="header">
+<th align="left">block</th>
+<th align="left">nitro</th>
+<th align="right">yield</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">1</td>
+<td align="left">trt_002</td>
+<td align="right">90.1</td>
+</tr>
+<tr class="even">
+<td align="left">1</td>
+<td align="left">trt_005</td>
+<td align="right">91.1</td>
+</tr>
+<tr class="odd">
+<td align="left">1</td>
+<td align="left">trt_003</td>
+<td align="right">102.0</td>
+</tr>
+<tr class="even">
+<td align="left">1</td>
+<td align="left">trt_004</td>
+<td align="right">112.4</td>
+</tr>
+<tr class="odd">
+<td align="left">1</td>
+<td align="left">trt_001</td>
+<td align="right">84.1</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">identical</span>(<span class="fu">unmask</span>(<span class="fu">synthetic</span>(m_rates), <span class="fu">recipe</span>(m_rates))<span class="sc">$</span>nitro, rates<span class="sc">$</span>nitro)</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
+<p>Every block still holds each rate once, so the design is intact. With
+<code>action = &quot;scramble&quot;</code> the rates stay numbers and are permuted
+among themselves instead. A numeric treatment left at <code>keep</code>
+in collaborate mode audits HIGH.</p>
+</div>
+<div id="the-conditional-clone-preserving-the-treatment-effect" class="section level3">
+<h3>The conditional clone: preserving the treatment effect</h3>
+<p>The default numeric synthesis re-simulates every scrambled numeric
+column from one Gaussian copula with empirical-quantile marginals,
+fitted on the whole table. That preserves each column’s marginal
+distribution and the global covariance, which is enough to develop most
+pipelines. It does not keep the relationship between treatment and
+outcome. The synthetic outcomes are drawn from the pooled distribution
+and the treatment labels are relabelled independently, so a causal model
+fitted on the clone sees no association between an arm and its response.
+A pipeline whose whole purpose is to estimate a treatment effect would
+silently give the wrong answer on such a clone.</p>
+<p><code>mask()</code>’s <code>conditional = TRUE</code> argument fixes
+this. It fits and samples the copula <em>within each treatment-by-design
+stratum</em> rather than pooling, so a row’s synthetic outcome inherits
+the location of the treatment that row carries. The treatment effect a
+causal model estimates is kept, within sampling tolerance.</p>
+<p>The contrast is easiest to see on a two-arm trial with a known
+effect:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">600</span><span class="dt">L</span></span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>arm <span class="ot">&lt;-</span> <span class="fu">factor</span>(<span class="fu">rep</span>(<span class="fu">c</span>(<span class="st">&quot;ctrl&quot;</span>, <span class="st">&quot;treat&quot;</span>), <span class="at">each =</span> n <span class="sc">/</span> <span class="dv">2</span><span class="dt">L</span>))</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="co"># A real +5-unit effect of the treated arm on yield.</span></span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>yield <span class="ot">&lt;-</span> <span class="dv">10</span> <span class="sc">+</span> <span class="dv">5</span> <span class="sc">*</span> (arm <span class="sc">==</span> <span class="st">&quot;treat&quot;</span>) <span class="sc">+</span> <span class="fu">rnorm</span>(n, <span class="at">sd =</span> <span class="dv">2</span>)</span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>trial <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">genotype =</span> arm, <span class="at">yield =</span> yield)</span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>plan <span class="ot">&lt;-</span> <span class="fu">propose_roles</span>(trial, <span class="at">detect =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>plan <span class="ot">&lt;-</span> <span class="fu">set_role</span>(plan, <span class="st">&quot;genotype&quot;</span>, <span class="at">role =</span> <span class="st">&quot;treatment&quot;</span>, <span class="at">action =</span> <span class="st">&quot;scramble&quot;</span>)</span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a>plan <span class="ot">&lt;-</span> <span class="fu">set_role</span>(plan, <span class="st">&quot;yield&quot;</span>, <span class="at">role =</span> <span class="st">&quot;outcome&quot;</span>)</span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a></span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a>true_effect <span class="ot">&lt;-</span> <span class="fu">coef</span>(<span class="fu">lm</span>(yield <span class="sc">~</span> genotype, trial))[[<span class="st">&quot;genotypetreat&quot;</span>]]</span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a>true_effect</span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a><span class="co">#&gt; [1] 4.988538</span></span></code></pre></div>
+<p>Cloning both ways from the same seed, then re-estimating the effect
+on each clone:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>marg <span class="ot">&lt;-</span> <span class="fu">mask</span>(trial, plan, <span class="at">mode =</span> <span class="st">&quot;local&quot;</span>, <span class="at">seed =</span> <span class="dv">1</span><span class="dt">L</span>, <span class="at">conditional =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>cond <span class="ot">&lt;-</span> <span class="fu">mask</span>(trial, plan, <span class="at">mode =</span> <span class="st">&quot;local&quot;</span>, <span class="at">seed =</span> <span class="dv">1</span><span class="dt">L</span>, <span class="at">conditional =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>effect_of <span class="ot">&lt;-</span> <span class="cf">function</span>(m) {</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>  <span class="fu">coef</span>(<span class="fu">lm</span>(yield <span class="sc">~</span> genotype, <span class="fu">synthetic</span>(m)))[[<span class="st">&quot;genotypetreat&quot;</span>]]</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>}</span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>effect_marg <span class="ot">&lt;-</span> <span class="fu">effect_of</span>(marg)</span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>effect_cond <span class="ot">&lt;-</span> <span class="fu">effect_of</span>(cond)</span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a></span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(</span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a>  <span class="fu">data.frame</span>(</span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>    <span class="at">clone =</span> <span class="fu">c</span>(<span class="st">&quot;marginal (default)&quot;</span>, <span class="st">&quot;conditional&quot;</span>),</span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a>    <span class="at">estimated_effect =</span> <span class="fu">c</span>(effect_marg, effect_cond),</span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a>    <span class="at">true_effect =</span> true_effect</span>
+<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a>  ),</span>
+<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a>  <span class="at">digits =</span> <span class="dv">3</span>,</span>
+<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a>  <span class="at">caption =</span> <span class="fu">paste0</span>(</span>
+<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a>    <span class="st">&quot;The treated-arm effect, re-estimated on each clone against the &quot;</span>,</span>
+<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a>    <span class="st">&quot;true effect fitted on the original trial.&quot;</span></span>
+<span id="cb5-20"><a href="#cb5-20" tabindex="-1"></a>  )</span>
+<span id="cb5-21"><a href="#cb5-21" tabindex="-1"></a>)</span></code></pre></div>
+<table>
+<caption>The treated-arm effect, re-estimated on each clone against the
+true effect fitted on the original trial.</caption>
+<thead>
+<tr class="header">
+<th align="left">clone</th>
+<th align="right">estimated_effect</th>
+<th align="right">true_effect</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">marginal (default)</td>
+<td align="right">0.249</td>
+<td align="right">4.989</td>
+</tr>
+<tr class="even">
+<td align="left">conditional</td>
+<td align="right">5.138</td>
+<td align="right">4.989</td>
+</tr>
+</tbody>
+</table>
+<p>The marginal clone collapses the effect toward zero. The conditional
+clone recovers it. Both clones still match the pooled marginal of the
+outcome:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>  <span class="fu">data.frame</span>(</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>    <span class="at">source =</span> <span class="fu">c</span>(<span class="st">&quot;original&quot;</span>, <span class="st">&quot;marginal clone&quot;</span>, <span class="st">&quot;conditional clone&quot;</span>),</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>    <span class="at">mean_yield =</span> <span class="fu">c</span>(</span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>      <span class="fu">mean</span>(trial<span class="sc">$</span>yield), <span class="fu">mean</span>(<span class="fu">synthetic</span>(marg)<span class="sc">$</span>yield),</span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>      <span class="fu">mean</span>(<span class="fu">synthetic</span>(cond)<span class="sc">$</span>yield)</span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>    ),</span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>    <span class="at">sd_yield =</span> <span class="fu">c</span>(</span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>      <span class="fu">sd</span>(trial<span class="sc">$</span>yield), <span class="fu">sd</span>(<span class="fu">synthetic</span>(marg)<span class="sc">$</span>yield),</span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>      <span class="fu">sd</span>(<span class="fu">synthetic</span>(cond)<span class="sc">$</span>yield)</span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a>    )</span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>  ),</span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a>  <span class="at">digits =</span> <span class="dv">3</span>,</span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a>  <span class="at">caption =</span> <span class="fu">paste0</span>(</span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a>    <span class="st">&quot;Both clones preserve the pooled mean and SD of yield; only the &quot;</span>,</span>
+<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a>    <span class="st">&quot;conditional clone preserves the arm-to-arm difference.&quot;</span></span>
+<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a>  )</span>
+<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a>)</span></code></pre></div>
+<table>
+<caption>Both clones preserve the pooled mean and SD of yield; only the
+conditional clone preserves the arm-to-arm difference.</caption>
+<thead>
+<tr class="header">
+<th align="left">source</th>
+<th align="right">mean_yield</th>
+<th align="right">sd_yield</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">original</td>
+<td align="right">12.451</td>
+<td align="right">3.183</td>
+</tr>
+<tr class="even">
+<td align="left">marginal clone</td>
+<td align="right">12.496</td>
+<td align="right">3.083</td>
+</tr>
+<tr class="odd">
+<td align="left">conditional clone</td>
+<td align="right">12.497</td>
+<td align="right">3.199</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="figure-the-effect-on-each-clone" class="section level3">
+<h3>Figure: the effect on each clone</h3>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>effect_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>  <span class="at">clone =</span> <span class="fu">factor</span>(</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>    <span class="fu">c</span>(<span class="st">&quot;marginal (default)&quot;</span>, <span class="st">&quot;conditional&quot;</span>),</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>    <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">&quot;marginal (default)&quot;</span>, <span class="st">&quot;conditional&quot;</span>)</span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>  ),</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>  <span class="at">estimated_effect =</span> <span class="fu">c</span>(effect_marg, effect_cond)</span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>)</span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>ggplot2<span class="sc">::</span><span class="fu">ggplot</span>(</span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>  effect_df, ggplot2<span class="sc">::</span><span class="fu">aes</span>(<span class="at">x =</span> clone, <span class="at">y =</span> estimated_effect, <span class="at">fill =</span> clone)</span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a>) <span class="sc">+</span></span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">geom_col</span>(<span class="at">width =</span> <span class="fl">0.6</span>) <span class="sc">+</span></span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">geom_hline</span>(<span class="at">yintercept =</span> true_effect, <span class="at">linetype =</span> <span class="st">&quot;dashed&quot;</span>) <span class="sc">+</span></span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">scale_fill_viridis_d</span>(<span class="at">guide =</span> <span class="st">&quot;none&quot;</span>) <span class="sc">+</span></span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">labs</span>(</span>
+<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">&quot;clone&quot;</span>, <span class="at">y =</span> <span class="st">&quot;estimated treatment effect (yield units)&quot;</span>,</span>
+<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">&quot;Marginal versus conditional cloning of a known treatment effect&quot;</span></span>
+<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">theme_minimal</span>()</span></code></pre></div>
+<div class="float">
+<img src="data:image/png;base64,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1ltvrTXv8ccfHzl9JY1cunRpsuznnHNORRRt8eLFyTJddtllFVEmClG9Am+++abf3rbbbrtalYz6beiEVtvm3Llz7c4776w132uvvebz+/LLL2sNb6x/vPDCC/bMM89Y8+b1H3+uxN9+1HbQWNdprnL//ve/t+9973u1Jlu5cqW/oKg1sAH/qLbfVQPS5bWoqH1aXhmUcaLGXPY4bM8995y/2H/ggQfsW9/6VpysCppX3occcoi9++67yfnmzJljHTt29H9X4v6jXFZJIL4ggEAtgSYXaKhVe/fHRx99ZG+88YalX3ykT1dTU2MPPvhg+mD+RgCBKhY4+uij7c9//rPpk4RAtQlccMEFvkp9+vSxs88+27797W83SKCp2hwbU30a8z6tMZe92G1EgbehQ4cWO3us+e65555kkOGEE07wx8E2bdrYwIEDfb6Vtv8op1UsaGZGoIoFmnSgYeONN/Z3KhUlzhVoePrpp23hwoXWtm1b++qrrxrdJqEouO7KKn3jG99odOWnwAjUl0DUb0N3d7Olm2++2W644QZr3bp1tkkY3ogEoraDRlSNvIuqZtjz5s3z048dO9Z++MMf5j0vEzZegah9WqXXqjGXvVjbVatWFTtr7Plmzpzp8+jevbvdfvvt1qxZs2Selbj/KKdVEoYvCCBQS6D+28jWWlxl/XHEEUf4At1///05C3bffff5afQsa2NMLVu2tI022sj/a9WqVWOsAmVGoF4Eiv1tdOrUyf+eOnfuXC/lItOGFSh2O2jYUpZuaYsWLbJEIuEz7NWrV+kyJicEEKgKAd1cU1K/DKlBBg1j/yEFEgII5BJo0i0a1AxPndp8/PHHkY9PqGOshx56yFsec8wxlk9gQnl+8MEH/t/8+fOtb9++tvnmm9sOO+zgO91KXzF6PlidTer56D333NM0zx//+Eff+c+hhx5qm266aa1Z9Oyc+ppQnxMKHOyyyy628847W7t27ez11183PTe+2WabWe/evf18K1assFdffdV/33777U0XSSG9/fbbvrVGv379fDl110BlUWeXilpreuWvzsKiUqF1jsor0zitBz1HriTLqJNj2etZwvXXX9923XXXOtl9/vnn3knP7cteHR1p3cggU3rrrbdMz5XLVMv929/+Zn//+9+9+bBhw2o906zHbJ566ilTh3cqg9a9OlgbNGiQZboo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EECgKAECDUWxMRMCCCCAAAIIIIAAAggggAACCGQSINCQSYVhCCCAAAIIIIAAAggggAACCCBQlACBhqLYmAkBBBBAAAEEEEAAAQQQQAABBDIJtMw0sJKGnXPOOfbee+/VKVKvXr3s5ptvrjOcAQgggAACCCCAAAIIIIAAAgggUD6Big40JBIJe/fdd22jjTaygQMH1lL6xje+Uetv/kAAAQQQQAABBBBAAAEEEEAAgfILVHSg4bPPPrOVK1faIYccYkcccUT5tSgBAggggAACCCCAAAIIIIAAAghEClR0Hw0ffvihL/y3vvWtyEowEgEEEEAAAQQQQAABBBBAAAEEKkOgols0KNDQvHlz0yMU119/vS1evNj69u1rBx54oHXt2rUgQeWxdOnSguZhYgQQaFoC2k+EtGzZMr//CX/ziQACCFSDQPtqqAR1QACBehf48ssv630ZLKBxCbRt29ZatWqVd6GbuRPr/51Z5z1bw0x47rnn2quvvuoX1rt3b9MGv2TJEmvfvr2NHz/ett9++7wLsnbtWj9P1Axaxn777Rc1iX3wwQf23HPPRU4zePDgnGVTHsorKh1wwAHWs2fPqEnswQcftM8//zxympNOOsnWW2+9rNOsWbPGfv/732cdrxGdO3e2I488MnIaPery+OOPR06zxRZb2J577hk5zRtvvGFTp06NnGb33Xe3rbbaKnKaJ554wmbNmhU5zciRIy1Xfx933XWXffXVV1nzadGihZ1yyilZx2uELlrvvffeyGk23nhjO/jggyOn+eijj+yZZ56JnGbbbbe1nXbaKXKal19+2d5+++3Iafbee2/bdNNNI6d5+OGHbcGCBZHTHHfccdauXbvIaW666abI8frNjxo1KnIalUPliUr9+vWz4cOHR01i77zzjr300kuR0+y88862zTbbRE6j9aT1FZX0WJj6oIlK9913X84g6amnnhoZFNEjaHfeeWfUYqxLly52+OGHR06j35N+V1Fp6623tt122y1qEv/71u88Kn3nO9+xzTffPGoS+/Of/2z//ve/I6c56qijrFOnTpHTaP+n/WC21Lp1axs9enS20X649sPaH0cldWK8//77R01i//znP+3vf/975DQ77LCD6V9Uev755+3999+PmsSXRWWKSn/4wx98kD9qGtnIKFvS8ffWW2/NNtoP1zrSuopKc+bMscce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viCAAAIIIIAAAggggAACCCBQnQKxAg077rijV7n++uttzpw5dsEFF9i6detsyJAh1r17dz9uxowZNn78eP995513rk5FaoUAAggggAACCCCAAAIIIIAAAl4g1ustFVTQYxNvvPFGkrNly5b2xBNP2LBhw+y5557zn3plXN++fe2DDz6w1q1bJ6flCwIIIFBJArzespLWBmVBAIH6EOD1lvWhSp4IVJ8Ar7esvnXa0DWK1aKhefPm9uyzz9rJJ59sffr0sT322MPuu+8+H1xQRdQ3g4IRCjq8+OKLBBkaeu2yPAQQQAABBBBAAAEEEEAAAQQaWCBWi4ZcZV2zZo3NmzePvhlyQTEeAQQqQoAWDRWxGigEAgjUowAtGuoRl6wRqCIBWjRU0cosU1VitWjIVeZWrVolgwwrVqwwdRZJQgABBBBAAAEEEEAAAQQQQACB6hWIFWi49957baONNrL33nsvUkh9NXTo0CHZKWTkxIxEAAEEEEAAAQQQQAABBBBAAIFGKxAr0LBy5UqbP3++rV27NhLgo48+skQiYWrVQEIAAQQQQAABBBBAAAEEEEAAgeoVaFlI1V544QUbNWpUcpYQONh3331Nj0lkSgpGLF682I8aNGhQpkkYhgACCCCAAAIIIIAAAggggAACVSJQUKBht912s2233dYee+yxWtVXh49RqVmzZqZgxAknnBA1GeMQQAABBBBAAAEEEEAAAQQQQKCRCxQUaFBd9frK0EJh8uTJNnbsWJsyZYptvfXWGSnU0qFjx47Wrl27jOMZiAACCCCAAAIIIIAAAggggAAC1SNQcKBBAYMQNBgyZIidfvrpNmDAAOvZs2f1qFATBBBAAAEEEEAAAQQQQAABBBAoSqCZ66QxUdSczIQAAghUmUBNTY0tWLDA16pr167WsmXBsdgqE6E6CCBQbQI1c/pUW5WoDwII1INAix6z6iFXsmxKAgWdRV9xxRW2bNkyGzFihO288842bdo0e+CBB/L22nvvvW348OF5T8+ECCCAAAIIIIAAAggggAACCCDQuAQKCjRMmDDB1PFj3759faBh+vTpdvXVV+dd47Zt2xJoyFuLCRFAAAEEEEAAAQQQQAABBBBofAIFBRrOO+88W758ue20006+poMHD7bx48fnXevdd98972mZEAEEEEAAAQQQQAABBBBAAAEEGp8AfTQ0vnVGiRFAoJ4E6KOhnmDJFgEEKkaAPhoqZlVQEAQqWoA+Gip69TSKwhXUoiGqRnrlpf6tXbs262TqXE3/SAgggAACCCCAAAIIIIAAAgggUJ0CsQMNb775po0ZM8aeffbZnEKXXHKJjRs3Lud0TIAAAggggAACCCCAAAIIIIAAAo1TIFag4YsvvrBDDz3UZs+e7WvfsWNH6969uzVv3jyjRpcuXTIOZyACCCCAAAIIIIAAAggggAACCFSHQKxAw8MPP+yDDAMGDLCHHnrINttss+pQoRYIIIAAAggggAACCCCAAAIIIFCUQOamB3lm9cYbb/gp9eYJggx5ojEZAggggAACCCCAAAIIIIAAAlUsECvQoEcllLbaaqsqJqJqCCCAAAIIIIAAAggggAACCCCQr0CsQMOuu+7ql/P666/nuzymQwABBBBAAAEEEEAAAQQQQACBKhaIFWgYPny4fec737ELL7zQPv744ypmomoIIIAAAggggAACCCCAAAIIIJCPQKzOIOfOnWsnnniinXXWWda/f38bNmyY9e3b1zp16pRx2XvttZfpHwkBBBBAAAEEEEAAAQQQQAABBKpTIFag4emnn7ZTTjklKTNlypTk90xfWrduTaAhEwzDEEAAAQQQQAABBBBAAAEEEKgSgViBhh122MEuu+yyvCmGDh2a97RMiAACCCCAAAIIIIAAAggggAACjU+gWcKlxldsSowAAgiUXqCmpsYWLFjgM+7atau1bBkrFlv6ApIjAgggEFOgZk6fmDkwOwIINAWBFj1mNYVqUsd6FIjVGWQ9lousEUAAAQQQQAABBBBAAAEEEECgEQrEul23cuVKW7JkSd7V7tChg7Vv3z7v6ZkQAQQQQAABBBBAAAEEEEAAAQQal0CsQMO9995bqzPIXFUfN26cXXLJJbkmixy/aNEiU6eSClqQEEAAAQQQQAABBBBAAAEEEECgsgRiPTrRpk0b69atW8Z/6623XrKm66+/vh100EG2xRZbJIcV82X69Ok2cuRIu+uuu4qZnXkQQAABBBBAAAEEEEAAAQQQQKCeBWIFGo499libP39+xn9fffWVffLJJ3bNNdfY119/bTvuuKNp+mKT8rviiits3bp1xWbBfAgggAACCCCAAAIIIIAAAgggUM8CsR6diCpbixYtbNNNN7Uf//jHfrKf/OQntuuuu9pee+0VNVvW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iBVo+Oc//2kKMmy88cZ2wgkn+KDDVlttlZdG3759bdSoUaYOIkkIIIAAAggggAACCCCAAAIIIFAdArEenXjttdf8oxL77befqQNIEgIIINCYBXh0ojGvPcqOAAL5CPDoRD5KTIMAAjw6wTYQV+B/HSfkyOnjjz+23/72t6YOH0Pacccd7cADDywqyKA3Ttxzzz2mxy9ICCCAAAIIIIAAAggggAACCCBQHQJ5BxrUYmHs2LG2zTbb2AMPPFD0qynXrVtnjz/+uA0ePNj35cArLqtjQ6IWCCCAAAIIIIAAAggggAACCEgg70CD+lR4++23fceNRx11lOmVleecc469/PLLOYMOCi68+eab/pWWykevudT87733nu22226sCQQQQAABBBBAAAEEEEAAAQQQqBKBovpouP322238+PH24YcfeobOnTtbnz59fPCgV69evnPI5cuX26JFi2zWrFmm118uXbrUT6sWEddee61/5WWVGFINBBCoEgH6aKiSFUk1EEAgqwB9NGSlYQQCCKQI0EdDCgZfixIoKtCgJamVwiOPPGI33HCDPf/887ZmzZqsBWjVqpUNHTrUv2XixBNPLKpPh6yZMwIBBBAokQCBhhJBkg0CCFSsAIGGil01FAyBihIg0FBRq6NRFqboQENqbVesWGEvvPCCfxRi4cKF9sUXX9iGG27oWzboEYk999zTOnbsmDoL3xFAAIGKEyDQUHGrhAIhgECJBQg0lBiU7BCoUgECDVW6YhuwWiUJNDRgeVkUAgggUG8CBBrqjZaMEUCgQgQINFTIiqAYCFS4AIGGCl9BjaB4eXcG2QjqQhERQAABBBBAAAEEEEAAAQQQQKDMAgQayrwCWDwCCCCAAAIIIIAAAggggAAC1SRAoKGa1iZ1QQABBBBAAAEEEEAAAQQQQKDMAgQayrwCWDwCCCCAAAIIIIAAAggggAAC1SRAoKGa1iZ1QQABBBBAAAEEEEAAAQQQQKDMAgQayrwCWDwCCCCAAAIIIIAAAggggAAC1STQYIGGFStW2KJFi6rJjroggAACCCCAAAIIIIAAAggggECaQKxAw7333msbbbSRvffee2nZ1v7zueeesw4dOtj48eNrj+AvBBBAAAEEEEAAAQQQQAABBBCoKoFYgYaVK1fa/Pnzbe3atZEoH330kSUSCVOrBhICCCCAAAIIIIAAAggggAACCFSvQMtCqvbCCy/YqFGjkrOEwMG+++5rrVq1Sg5P/aJgxOLFi/2gQYMGpY7iOwIIIIAAAggggAACCCCAAAIIVJlAQYGG3Xbbzbbddlt77LHHajHMmzev1t/pfzRr1swUjDjhhBPSR/E3AggggAACCCCAAAIIIIAAAghUkUBBgQbV+7777ku2UJg8ebKNHTvWpkyZYltvvXVGFrV06Nixo7Vr1y7jeAYigAACCCCAAAIIIIAAAggggED1CBQcaFDAIAQNhgwZYqeffroNGDDAevbs6fthUOuFkNTSoXv37pY6LIzjEwEEEEAAAQQQQAABBBBAAAEEqk8gVmeQu+66q02cONEeeeQR36LhzTffrCWkIESvXr3s2muvrTWcPxBAAAEEEEAAAQQQQAABBBBAoDoFYgUaRHLWWWfZGWecYe+//759+OGHtZSWL19un332mY0ZM8a3fKg1kj8QQAABBBBAAAEEEEAAAQQQQKDqBGIFGtSC4YYbbrBu3br5lg0jR46sBfTkk0/6Ph0233xzu+mmm+y5556rNZ4/EEAAAQQQQAABBBBAAAEEEECgugRiBRr09olEImFXXHGFb7HQokWLWjr6++ijj/bjNeKBBx6oNZ4/EEAAAQQQQAABBBBAAAEEEECgugRiBRpmzZrlNQ477LBIlUMOOcTatm1b59GKyJkYiQACCCCAAAIIIIAAAggggAACjU4gVqBhq6228hWeO3duZMXXrFljK1eutI033jhyOkYigAACCCCAAAIIIIAAAggggEDjFogVaBg2bJiv/ZVXXhmp8Ktf/co/YrHttttGTsdIBBBAAAEEEEAAAQQQQAABBBBo3AIt4xR/m222sf79+9vkyZNt6dKlNnbsWP+ay65du9oXX3xhH3/8sU2YMMHuvPNO69mzp5100klxFse8CCCAAAIIIIAAAggggAACCCBQ4QLNXGeOiThl/Pzzz+3ggw+2l156KZlN8+bNbd26dcm/O3fubH/84x9tzz33TA7jCwIIIFBpAjU1NbZgwQJfLAVMW7aMFYuttOpRHgQQQMBq5vRBAQEEEMgp0KLHf/riyzkhEyCQRSDWoxPKc8MNN7SnnnrKxo0bZwceeKD16NHDBxlat25t6sPhzDPP9J1AEmTIsgYYjAACCCCAAAIIIIAAAggggEAVCcRu0ZDJ4ssvv7QOHTqYWjaQEEAAgcYiQIuGxrKmKCcCCBQrQIuGYuWYD4GmJUCLhqa1vuujtvXSLniDDTaoj7KSJwIIIIAAAggggAACCCCAAAIIVLhAyZocTJ8+3S699FI7/vjjbciQIb5zyEWLFpneSKFPEgIIIIAAAggggAACCCCAAAIIVL9A7EcnVq5caWPGjLFJkyaZmh2HtHjxYpsxY4btsssupk7VpkyZYjvssEMYzScCCCBQcQI8OlFxq4QCIYBAiQV4dKLEoGSHQJUK8OhEla7YBqxW7BYN5557rk2cONHatm1rxx13nA0dOjRZ/C5duli/fv1s4cKFtv/++9uKFSuS4wr5ohdjzJ8/37766qtCZmNaBBBAAAEEEEAAAQQQQAABBBBoYIFYgYapU6fahAkTbNCgQTZ37ly76667rH///skqbLbZZqZHKo488kgfbLjllluS4/L98vjjj9shhxxiRxxxhA9WnHbaaf4tFvnOz3QIIIAAAggggAACCCCAAAIIINBwArECDS+88IIv6XXXXWft2rXLWGoNP//88/24adOmZZwm28CZM2fa1VdfbQpYXHXVVXbeeefZmjVr7IwzzrBPP/0022wMRwABBBBAAAEEEEAAAQQQQACBMgnEeuvE+++/74utFg1RSeP1ust58+ZFTVZn3E033WTrr7++XXHFFclARq9evez73/++Pf3003bqqafWmYcBCCCAAAIIIIAAAggggAACCCBQPoFYgYbevXv7ks+ePdsGDBiQtRYLFiywZcuW+f4ask6UNkL9Muy7777+cYnU1hJbbLGFNW/e3JQnCQEEEEAAAQQQQAABBBBAAAEEKksgVqBhu+2287VRi4P77rsva80uuugiP27gwIFZp0kf0axZs1odS2r8unXr7P777/efeoVmoUnBCxICCCCQj4D2F+wz8pFiGgQQQAABBBCoNgHOgaptjZamPrpGzzfFCjToTRK64J88ebLpNZd6A8WqVav8slevXm3qk0F9K/zxj3+0vn372ujRo/MtV53plI/6hFi6dKl/nWbq2y3qTJxhgH4shT66kSEbBiGAQBMRWLRoUROpKdVEAIGmJNCtKVWWuiKAQNECXDcVTVe1M3bq1MnatGmTd/1iBRr0CMOdd95pw4YNs0cffdT/C0vWYxVr1671f26wwQZ2++23W/v27cPogj7VkuHLL7805fnOO+/Ys88+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0RAIRepAwPkCjGhw/jUOdg+DOi5YH5do2bJlsPtA/QgggAACCCCAAAIIIIAAAgggECYCAQk0vPPOO7JlyxY5evSomfSxqr7deOONoj8kBBBAAAEEEEAAAQQQQAABBBBwpoCtQIPOI3nDDTeIBhp8SfoIBYEGX6QogwACCCCAAAIIIIAAAggggEBkCtgKNOTk5JggQ3x8vEyaNMksX9mwYcMqJbp161ZlHhkIIIAAAggggAACCCCAAAIIIBD5ArYCDZs3bzYCL7/8skyZMiXyNegBAggggAACCCCAAAIIIIAAAgjYErC1vGW9evXMyQcOHGirERyMAAIIIIAAAggggAACCCCAAALOELAVaLjmmmuMwt69e52hQS8QQAABBBBAAAEEEEAAAQQQQMCWgK1Aw+DBg2XIkCEyffp0OXLkiK2GcDACCCCAAAIIIIAAAggggAACCES+gK05GurWrSsrV66UHj16SPv27aVv376Snp4uut9TGjFihFx33XWestiHAAIIIIAAAggggAACCCCAAAIOELAVaCgrK5OZM2fK7t27DcW6deu8kqSmptoKNJw5c0YKCwulZcuWXs9DJgIIIIAAAggggAACCCCAAAIIhEbAVqBh48aN8txzz5kRDDqaoV+/ftKkSZMqe9KrV68q86rLKC0tlUceeUROnjwpr732WnXFyUcAAQQQQAABBBBAAAEEEEAAgRAI2Ao0rF+/3jT5oYcekgULFgSt+efPn5dnn31Wtm3bJhkZGUE7DxUjgAACCCCAAAIIIIAAAggggIA9AVuBBn2UQdOYMWPstcLL0Z9//rksXLhQDh8+LNZyml6Kk4UAAggggAACCCCAAAIIIIAAAiEUsLXqhLW85Y4dO4LWhXvuuUe+//57ef7556VNmzZBOw8VI4AAAggggAACCCCAAAIIIICAfYGY8oupptUUFxeLBhtOnDghf/rTn6RTp041rarK49566y254YYbzGiGKVOmiI6iqMkcDdpNDViQEEAAgaoE9PdEUVGRyU5ISJA6dWzFYqs6DfsRQACBkAkknA78Z7WQdYYTI4BA0ATOJP1P0Oqm4sgUqF+/vsTHx/vceFuPThQUFIj+8X/vvfdKz549pXv37pKZmSktWrTw+AF98ODBoj/+pFtvvdWf4l7LEmjwykMmAgi4CViPhrntYhMBBBCIeIGEiO8BHUAA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26hx48aZxySiIdCgj8DoxJI67JeEAAIIIIAAAggggICvAoxo8FWKcgggEFABHSqpczFs3rzZTI6of8TrLN06gZa/w/0D2rBqKtPhovfee688+OCDopMvOjnpzOitWrWS2267zcndpG8IIIAAAggggAACARYg0BBgUKpDAAEEEEAAAQQQQAABBBBAIJoFWN4ymq8+fUcAAQQQQAABBBBAAAEEEEAgwAIEGgIMSnUIIIAAAggggAACCCCAAAIIRLMAgYZovvr0HQEEEEAAAQQQQAABBBBAAIEACxBoCDAo1SGAAAIIIIAAAggggAACCCAQzQIsbxnNV5++I4AAAgggEECBsrIyeeWVV6ROnToyefLkANZMVQgggAACCCAQSQKsOhFJV4u2IoAAAgggEMYCJSUl0qBBA4mPj5dz586FcUtpGgIIIIAAAggEU4BHJ4KpS90IIIAAAggggAACCCCAAAIIRJkAgYYou+B0FwEEEEAAAQQQQAABBBBAAIFgChBoCKYudSOAAAIIIOAwgQsXLsjRo0dFX2ua8vLy5MyZM34fnpubKzoPhC+ptLRUjh07JuXl5b4UpwwCCCCAAAIIBFCAQEMAMakKAQQQQAABpwrk5OTITTfdJE2aNJG0tDQzF8Mtt9wie/fu9anLX3/9tUyYMEEuv/xyadasmSQlJckPf/hDee655zwGLTIzM2XIkCEmIHHnnXdK8+bNzY8e95Of/ES+/PJLj+d977335Ec/+pFcdtllcuWVV5rzXX/99VWW91gJOxFAAAEEEEDAlgCTQdri42AEEEAAAQScL/Daa6/JxIkTpW7dunLdddeZP/hXrVolGjxITU2VTz/9VFq3bi1VTQa5Z88e6dmzp3z//ffSsWNH6d+/v5w8eVI++OAD+eabb2TAgAFmW+u3UmxsrLRq1cqca/v27TJw4ECpV6+e/OUvfzHHNmrUSL744gtp3LixdYg88cQTMnfuXDMZ5Y033miO12PXr19vAhsrV66UQYMGucqzgQACCCCAAALBESDQEBxXakUAAQQQQMARAvqHvY4sSE5Olg8//FCysrJMv/SRBB3RoH+833bbbbJixQqPgQZ9hKFPnz6yZcsWefDBB+WZZ54RDSJo0kcwRowYITt27JD58+fLjBkzzH79R8vo4xkZGRkmuJCenm7yCgoKpFevXnLw4EF5/vnnTZ2aofVrMEMDENrmq6++2pTXf15//XUZP368tG3bVj7//HMTMHFlsoEAAggggAACARfg0YmAk1IhAggggAACzhFYtmyZnD9/Xh5++GFXkEF7FxMTI08//bRcddVVZruquRB05IMGAfSPfC1vBRm0Dn204Te/+Y1uyrx580ygwrxx+0cDEFaQQXfrCAoNGmjSAIWVHn/8cTMfw4IFCyoEGTR/3Lhxpu0HDhwQHZ1BQgABBBBAAIHgCsQFt3pqRwABBBBAAIFIFti2bZtpvs7PUDn94Ac/kN27d1feXeG9jiDQNHr0aImLu/Rjh4520PkYdITCvn37LgkS6HwLlZOOctBUXFxsXvWfrVu3mu0ePXqIjnqonIYNGyb6GIV7cKJyGd4jgAACCCCAQGAELr3jB6ZeakEAAQQQQACBCBfQxx6sQEHLli1r1Budn0GTFRzwVIkVaNCJJd0fedCyOuqhckpISDC7rFEU3377rZw4ccLs8xSYcD9+//797m/ZRgABBBBAAIEgCBBoCAIqVSKAAAIIIOAEAZ3c8ezZs+bRCPdHHvzp27lz50xxT6MZrHr0MQxNnpbM9HacdXxRUZHZ1LL33HOPtdvjq/tjGB4LsBMBBBBAAAEEbAsQaLBNSAUIIIAAAgg4U0CXiGzatKnk5eWZiRs9jUrQiRcbNmxoVpPwpKCPV2g6dOiQefX0j5Wn8y/UJLVo0UJ0lMOZM2fk0UcfNStV1KQejkEAAQQQQACBwAgwGWRgHKkFAQQQQAABRwq0b9/e9Oujjz66pH86r8K1117rWrrykgIXd+hkkZpWr15tJms0b9z+2bVrl3z55ZdmJYju3bu75fi+qSMirPO88847Hg+cOXOm6DwNv//97z3msxMBBBBAAAEEAidAoCFwltSEAAIIIICA4wSmTZtm+qSrP+Tm5lbo37PPPitlZWUyaNAgady4cYU8682YMWOkTZs2ZiLGF154wdptXr///nu57777TABi7NixZmREhQJ+vLGWxtRXXV3CPX388cdm+cz3339fajrXhHt9bCOAAAIIIICAdwEenfDuQy4CCCCAAAJRLTBixAi55ZZb5I9//KN07drVLC2ZnJwsy5cvF53o8fLLL5fFixdXaVSvXj1ZtGiRjBw5Uh566CFZt26dDBw4UHQCxzfffNMEBa6//nr57W9/W2UdvmRoG612ZmVlyR133GGW1NywYYN88MEHJpgxefJkGTx4sC/VUQYBBBBAAAEEbAjEXJyxudzG8RyKAAIIIIAAAg4X0Ekan3/+eTMqQAMEVtKRDC+99JJrfgadPLJBgwYSHx8v1iSQVlldveLuu++WTz/91DXpY7t27WT48OGycOFC0YCEe9LJJ/W8Ohll3bp13bMkJydHfvrTn5olM//whz+48vQjjQY15syZU2GJS537QUdmaKCjTh0Gc7rA2EAAAQQQQCBIAgQaggRLtQgggAACCDhR4PDhw3L8+HHRSR6bNGnidxd1wsbdu3ebZSubN2/u9/G+HqCPeejcD82aNZNWrVqJL6tX+Fo35RBAAAEEEEDAuwCBBu8+5CKAAAIIIIAAAggggAACCCCAgB8CjB/0A4uiCCCAAAIIIIAAAggggAACCCDgXYBAg3cfchFAAAEEEEAAAQQQQAABBBBAwA8BAg1+YFEUAQQQQAABBBBAAAEEEEAAAQS8CxBo8O5DLgIIIIAAAggggAACCCCAAAII+CFAoMEPLIoigAACCCCAAAIIIIAAAggggIB3AQIN3n3IRQABBBBAAAEEEEAAAQQQQAABPwQINPiBRVEEEEAAAQQQQAABBBBAAAEEEPAuQKDBuw+5CCCAAAIIIIAAAggggAACCCDghwCBBj+wKIoAAggggAACCCCAAAIIIIAAAt4FCDR49yEXAQQQQAABBBBAAAEEEEAAAQT8ECDQ4AcWRRFAAAEEEEAAAQQQQAABBBBAwLsAgQbvPuQigAACCCCAAAIIIIAAAggggIAfAgQa/MCiKAIIIIAAAggggAACCCCAAAIIeBcg0ODdh1wEEEAAAQQQQAABBBBAAAEEEPBD4P8BOhlJUA4RABAAAAAASUVORK5CYII=" alt="Estimated treatment effect (yield units) on the marginal versus conditional clone, against the true effect fitted on the original trial (dashed line). The marginal clone collapses the effect toward zero; the conditional clone recovers it." />
+<div class="figcaption">Estimated treatment effect (yield units) on the
+marginal versus conditional clone, against the true effect fitted on the
+original trial (dashed line). The marginal clone collapses the effect
+toward zero; the conditional clone recovers it.</div>
+</div>
+<p>The conditioning columns (the treatment plus any retained design
+columns) are recorded on the recipe, so the choice is auditable:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="fu">recipe</span>(cond)<span class="sc">@</span>conditional</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a><span class="fu">recipe</span>(cond)<span class="sc">@</span>conditioning_cols</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a><span class="co">#&gt; [1] &quot;genotype&quot;</span></span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a><span class="fu">recipe</span>(cond)<span class="sc">@</span>conditioning_used</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a><span class="co">#&gt; [1] &quot;genotype&quot;</span></span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a><span class="fu">recipe</span>(cond)<span class="sc">@</span>fallback_frac</span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a><span class="co">#&gt; [1] 0</span></span></code></pre></div>
+<p><code>conditioning_cols</code> is what the call asked for;
+<code>conditioning_used</code> is the stratum the clone actually got,
+and <code>fallback_frac</code> is the share of rows that did not get a
+stratum at all. They differ because a conditional clone needs enough
+rows per stratum to fit a stratum-local copula, and the finest stratum
+available is rarely the one that has them. On a replicated factorial of
+six N rates by three varieties by four replicates, treatment crossed
+with every retained design column is seventy-two cells of one row.
+<code>mask()</code> therefore walks a <strong>coarsening
+ladder</strong>: it drops design columns until the cells hold at least
+five rows. Treatment columns are never dropped. Rows still in cells that
+are too small at the last rung are pooled into one fallback stratum.</p>
+<p>The default ladder (<code>ladder = &quot;hierarchy&quot;</code>) drops plot
+coordinates first, then blocking columns, then environment columns, so a
+site or a county is never given up before the replicates inside it. It
+carries the main effect of every dropped column into the clone as an
+additive shift. The county, replicate and block means of the original
+therefore survive even when the copula is fitted within the treatment
+alone; the threat table above lists what that discloses. The recipe
+lists the shifted terms as <code>conditioning_shifted</code>.
+<code>ladder = &quot;levels&quot;</code> reproduces clones made with masque 0.11.1
+to 0.12.0: it drops the column with the most levels first and keeps
+nothing of it.</p>
+<p>Any coarsening, and any residual pooling, raises a classed
+<code>masque_conditional_degraded</code> warning naming the columns
+given up and the pooled share, and both facts are written onto the
+recipe. A pipeline can catch the class if it should stop when its clone
+is less conditional than it asked for:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="fu">withCallingHandlers</span>(</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>  <span class="fu">mask</span>(trial, plan, <span class="at">seed =</span> <span class="dv">1</span><span class="dt">L</span>, <span class="at">conditional =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>  <span class="at">masque_conditional_degraded =</span> <span class="cf">function</span>(w) <span class="fu">stop</span>(<span class="fu">conditionMessage</span>(w))</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>)</span></code></pre></div>
+<p>Conditional cloning composes with both modes and with
+<code>mask_set()</code> (each table is stratified by its own treatment
+and design columns). With no treatment or design column to condition on
+at all, the path degrades to the global copula and raises the same
+classed warning. It is worth reaching for whenever the development
+pipeline estimates an effect, not just a distribution.</p>
+</div>
+<div id="what-the-copula-carries-monotone-not-non-monotone-association" class="section level3">
+<h3>What the copula carries: monotone, not non-monotone,
+association</h3>
+<p>Numeric columns that are kept and re-simulated together share one
+Gaussian copula, fitted on the normal scores of their ranks. A Gaussian
+copula holds a single correlation per pair, so it reproduces a
+<em>monotone</em> association (linear, or any order-preserving curve)
+but not a dependence that a correlation cannot express. A non-monotone
+relationship, such as a U-shaped dependence of an outcome on a
+covariate, reads as near-zero rank correlation and is reproduced as
+near-independence.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">7</span>)</span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">2000</span><span class="dt">L</span></span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>x_lin <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(n)</span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>y_lin <span class="ot">&lt;-</span> <span class="dv">2</span> <span class="sc">*</span> x_lin <span class="sc">+</span> <span class="fu">rnorm</span>(n, <span class="at">sd =</span> <span class="fl">0.5</span>)     <span class="co"># monotone (linear)</span></span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a>x_u <span class="ot">&lt;-</span> <span class="fu">runif</span>(n, <span class="sc">-</span><span class="dv">3</span>, <span class="dv">3</span>)</span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a>y_u <span class="ot">&lt;-</span> x_u<span class="sc">^</span><span class="dv">2</span> <span class="sc">+</span> <span class="fu">rnorm</span>(n, <span class="at">sd =</span> <span class="fl">0.5</span>)           <span class="co"># non-monotone (U-shaped)</span></span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(x_lin, y_lin, x_u, y_u)</span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a></span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a>s <span class="ot">&lt;-</span> <span class="fu">synthetic</span>(<span class="fu">mask</span>(d, <span class="fu">propose_roles</span>(d, <span class="at">detect =</span> <span class="cn">FALSE</span>), <span class="at">seed =</span> <span class="dv">1</span><span class="dt">L</span>))</span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a></span>
+<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a><span class="co"># R-squared of a quadratic fit captures association of any curvature.</span></span>
+<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a>fit_r2 <span class="ot">&lt;-</span> <span class="cf">function</span>(x, y) <span class="fu">summary</span>(<span class="fu">lm</span>(y <span class="sc">~</span> <span class="fu">poly</span>(x, <span class="dv">2</span>)))<span class="sc">$</span>r.squared</span>
+<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(</span>
+<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a>  <span class="fu">data.frame</span>(</span>
+<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a>    <span class="at">pair =</span> <span class="fu">c</span>(<span class="st">&quot;monotone (y = 2x)&quot;</span>, <span class="st">&quot;non-monotone (y = x^2)&quot;</span>),</span>
+<span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a>    <span class="at">original =</span> <span class="fu">c</span>(<span class="fu">fit_r2</span>(x_lin, y_lin), <span class="fu">fit_r2</span>(x_u, y_u)),</span>
+<span id="cb10-17"><a href="#cb10-17" tabindex="-1"></a>    <span class="at">clone =</span> <span class="fu">c</span>(<span class="fu">fit_r2</span>(s<span class="sc">$</span>x_lin, s<span class="sc">$</span>y_lin), <span class="fu">fit_r2</span>(s<span class="sc">$</span>x_u, s<span class="sc">$</span>y_u))</span>
+<span id="cb10-18"><a href="#cb10-18" tabindex="-1"></a>  ),</span>
+<span id="cb10-19"><a href="#cb10-19" tabindex="-1"></a>  <span class="at">digits =</span> <span class="dv">3</span>,</span>
+<span id="cb10-20"><a href="#cb10-20" tabindex="-1"></a>  <span class="at">caption =</span> <span class="fu">paste0</span>(</span>
+<span id="cb10-21"><a href="#cb10-21" tabindex="-1"></a>    <span class="st">&quot;R-squared of a quadratic fit, original versus clone, for a &quot;</span>,</span>
+<span id="cb10-22"><a href="#cb10-22" tabindex="-1"></a>    <span class="st">&quot;monotone and a non-monotone pair.&quot;</span></span>
+<span id="cb10-23"><a href="#cb10-23" tabindex="-1"></a>  )</span>
+<span id="cb10-24"><a href="#cb10-24" tabindex="-1"></a>)</span></code></pre></div>
+<table>
+<caption>R-squared of a quadratic fit, original versus clone, for a
+monotone and a non-monotone pair.</caption>
+<thead>
+<tr class="header">
+<th align="left">pair</th>
+<th align="right">original</th>
+<th align="right">clone</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">monotone (y = 2x)</td>
+<td align="right">0.942</td>
+<td align="right">0.941</td>
+</tr>
+<tr class="even">
+<td align="left">non-monotone (y = x^2)</td>
+<td align="right">0.966</td>
+<td align="right">0.000</td>
+</tr>
+</tbody>
+</table>
+<p>The monotone pair keeps its association almost exactly. The
+non-monotone pair loses it entirely, so on the clone the covariate
+carries no information about the outcome.
+<code>conditional = TRUE</code> does not repair this: it preserves the
+outcome’s location within each treatment-by-design stratum, not the
+curvature of the outcome’s dependence on a continuous covariate. A
+pipeline whose modelling step is non-linear (a smoothing spline, a
+generalised additive model, a tree, an interaction term) sees on the
+synthetic only the monotone part of any relationship in the original. A
+good fit there is not evidence that the step behaves correctly on the
+real data. Validate such a step by running it on the original through
+the recipe.</p>
+</div>
+<div id="columns-constant-within-a-trial-the-grain" class="section level3">
+<h3>Columns constant within a trial: the grain</h3>
+<p>Some columns describe a whole unit rather than a row: the rainfall of
+a trial, the soil type of a site, a sowing date. Re-simulated row by
+row, such a column would vary inside the trial, which no real trial
+does. <code>mask()</code> finds the design unit within which a column
+holds a single value and synthesises the column once per unit, writing
+each unit’s new value to all its rows. This is the column’s
+<em>grain</em>:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">3</span>)</span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>trials <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>  <span class="at">trial =</span> <span class="fu">factor</span>(<span class="fu">rep</span>(<span class="fu">sprintf</span>(<span class="st">&quot;T%d&quot;</span>, <span class="fu">seq_len</span>(<span class="dv">8</span><span class="dt">L</span>)), <span class="at">each =</span> <span class="dv">12</span><span class="dt">L</span>)),</span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a>  <span class="at">rep =</span> <span class="fu">factor</span>(<span class="fu">rep</span>(<span class="fu">rep</span>(<span class="fu">seq_len</span>(<span class="dv">3</span><span class="dt">L</span>), <span class="at">each =</span> <span class="dv">4</span><span class="dt">L</span>), <span class="dv">8</span><span class="dt">L</span>)),</span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a>  <span class="at">gen =</span> <span class="fu">factor</span>(<span class="fu">rep</span>(<span class="fu">sprintf</span>(<span class="st">&quot;G%d&quot;</span>, <span class="fu">seq_len</span>(<span class="dv">4</span><span class="dt">L</span>)), <span class="dv">24</span><span class="dt">L</span>))</span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a>)</span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a>trial_rain <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="fu">runif</span>(<span class="dv">8</span><span class="dt">L</span>, <span class="dv">250</span>, <span class="dv">550</span>))</span>
+<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a>trials<span class="sc">$</span>rainfall <span class="ot">&lt;-</span> trial_rain[<span class="fu">as.integer</span>(trials<span class="sc">$</span>trial)]</span>
+<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a>trials<span class="sc">$</span>yield <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="dv">2</span> <span class="sc">+</span> trials<span class="sc">$</span>rainfall <span class="sc">/</span> <span class="dv">200</span> <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="dv">96</span><span class="dt">L</span>, <span class="at">sd =</span> <span class="fl">0.4</span>), <span class="dv">2</span>)</span>
+<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a></span>
+<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a>plan_trials <span class="ot">&lt;-</span> <span class="fu">propose_roles</span>(trials, <span class="at">mode =</span> <span class="st">&quot;collaborate&quot;</span>)</span>
+<span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a>by_unit <span class="ot">&lt;-</span> <span class="fu">mask</span>(trials, plan_trials, <span class="at">mode =</span> <span class="st">&quot;collaborate&quot;</span>, <span class="at">seed =</span> <span class="dv">1</span><span class="dt">L</span>)</span>
+<span id="cb11-13"><a href="#cb11-13" tabindex="-1"></a>by_row <span class="ot">&lt;-</span> <span class="fu">mask</span>(trials, plan_trials, <span class="at">mode =</span> <span class="st">&quot;collaborate&quot;</span>, <span class="at">seed =</span> <span class="dv">1</span><span class="dt">L</span>,</span>
+<span id="cb11-14"><a href="#cb11-14" tabindex="-1"></a>               <span class="at">grain =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb11-15"><a href="#cb11-15" tabindex="-1"></a>values_per_trial <span class="ot">&lt;-</span> <span class="cf">function</span>(m) {</span>
+<span id="cb11-16"><a href="#cb11-16" tabindex="-1"></a>  s <span class="ot">&lt;-</span> <span class="fu">synthetic</span>(m)</span>
+<span id="cb11-17"><a href="#cb11-17" tabindex="-1"></a>  <span class="fu">as.vector</span>(<span class="fu">tapply</span>(s<span class="sc">$</span>rainfall, s<span class="sc">$</span>trial, <span class="cf">function</span>(x) <span class="fu">length</span>(<span class="fu">unique</span>(x))))</span>
+<span id="cb11-18"><a href="#cb11-18" tabindex="-1"></a>}</span>
+<span id="cb11-19"><a href="#cb11-19" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(</span>
+<span id="cb11-20"><a href="#cb11-20" tabindex="-1"></a>  <span class="fu">data.frame</span>(</span>
+<span id="cb11-21"><a href="#cb11-21" tabindex="-1"></a>    <span class="at">clone =</span> <span class="fu">c</span>(<span class="st">&quot;grain = TRUE (default)&quot;</span>, <span class="st">&quot;grain = FALSE&quot;</span>),</span>
+<span id="cb11-22"><a href="#cb11-22" tabindex="-1"></a>    <span class="at">distinct_rainfall_per_trial =</span> <span class="fu">c</span>(</span>
+<span id="cb11-23"><a href="#cb11-23" tabindex="-1"></a>      <span class="fu">paste</span>(<span class="fu">values_per_trial</span>(by_unit), <span class="at">collapse =</span> <span class="st">&quot; &quot;</span>),</span>
+<span id="cb11-24"><a href="#cb11-24" tabindex="-1"></a>      <span class="fu">paste</span>(<span class="fu">values_per_trial</span>(by_row), <span class="at">collapse =</span> <span class="st">&quot; &quot;</span>)</span>
+<span id="cb11-25"><a href="#cb11-25" tabindex="-1"></a>    )</span>
+<span id="cb11-26"><a href="#cb11-26" tabindex="-1"></a>  ),</span>
+<span id="cb11-27"><a href="#cb11-27" tabindex="-1"></a>  <span class="at">caption =</span> <span class="st">&quot;Distinct rainfall values in each of the eight trials of the clone.&quot;</span></span>
+<span id="cb11-28"><a href="#cb11-28" tabindex="-1"></a>)</span></code></pre></div>
+<table>
+<caption>Distinct rainfall values in each of the eight trials of the
+clone.</caption>
+<thead>
+<tr class="header">
+<th align="left">clone</th>
+<th align="left">distinct_rainfall_per_trial</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">grain = TRUE (default)</td>
+<td align="left">1 1 1 1 1 1 1 1</td>
+</tr>
+<tr class="even">
+<td align="left">grain = FALSE</td>
+<td align="left">7 6 7 5 10 9 8 7</td>
+</tr>
+</tbody>
+</table>
+<p><code>propose_roles()</code> notes such a column (“Constant within
+trial; synthesised per trial”), and the recipe records each grain. The
+clone keeps one value per unit, the frequencies of a categorical column
+across units, and the correlation among columns of the same grain. It
+does not keep the correlation between a grained column and the row-level
+columns, so the link between rainfall and yield above is lost, and
+grained columns are not conditioned on treatment when
+<code>conditional = TRUE</code>.</p>
+<p>In local mode the unit values are drawn from the real unit values. In
+collaborate mode they are jittered, and a grain with fewer than five
+units is synthesised row by row instead, with a
+<code>masque_grain_small_units</code> warning, because resampling so few
+real values would disclose them. The audit then notes that the clone
+does not keep that grain. <code>grain = FALSE</code> gives the
+row-by-row clone of masque 0.15.0.</p>
+</div>
+<div id="time-to-event-outcomes" class="section level3">
+<h3>Time-to-event outcomes</h3>
+<p>A clinical table often holds several event times on one row, such as
+time to recurrence and time to death, each with a status. Re-simulated
+as independent columns, the times would fall out of order. Declaring
+them to <code>events</code> keeps them linked. The times are listed in
+the order the events occur:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">5</span>)</span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a>n_pat <span class="ot">&lt;-</span> <span class="dv">300</span><span class="dt">L</span></span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a>arm <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="st">&quot;A&quot;</span>, <span class="st">&quot;B&quot;</span>), <span class="at">length.out =</span> n_pat)</span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a>t_rec <span class="ot">&lt;-</span> <span class="fu">rexp</span>(n_pat, <span class="fu">ifelse</span>(arm <span class="sc">==</span> <span class="st">&quot;A&quot;</span>, <span class="dv">1</span> <span class="sc">/</span> <span class="dv">900</span>, <span class="dv">1</span> <span class="sc">/</span> <span class="dv">1400</span>))</span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a>t_death <span class="ot">&lt;-</span> <span class="fu">rexp</span>(n_pat, <span class="dv">1</span> <span class="sc">/</span> <span class="dv">2500</span>)</span>
+<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a>censor <span class="ot">&lt;-</span> <span class="fu">runif</span>(n_pat, <span class="dv">30</span>, <span class="dv">3000</span>)</span>
+<span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a>status_death <span class="ot">&lt;-</span> <span class="fu">as.integer</span>(t_death <span class="sc">&lt;=</span> censor)</span>
+<span id="cb12-8"><a href="#cb12-8" tabindex="-1"></a>time_death <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="fu">pmin</span>(t_death, censor))</span>
+<span id="cb12-9"><a href="#cb12-9" tabindex="-1"></a>status_rec <span class="ot">&lt;-</span> <span class="fu">as.integer</span>(t_rec <span class="sc">&lt;</span> <span class="fu">pmin</span>(t_death, censor))</span>
+<span id="cb12-10"><a href="#cb12-10" tabindex="-1"></a>time_rec <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(status_rec <span class="sc">==</span> <span class="dv">1</span><span class="dt">L</span>, <span class="fu">pmin</span>(<span class="fu">round</span>(t_rec), time_death),</span>
+<span id="cb12-11"><a href="#cb12-11" tabindex="-1"></a>                   time_death)</span>
+<span id="cb12-12"><a href="#cb12-12" tabindex="-1"></a>patients <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(arm, time_rec, status_rec, time_death, status_death)</span>
+<span id="cb12-13"><a href="#cb12-13" tabindex="-1"></a></span>
+<span id="cb12-14"><a href="#cb12-14" tabindex="-1"></a>plan_pat <span class="ot">&lt;-</span> <span class="fu">propose_roles</span>(patients, <span class="at">mode =</span> <span class="st">&quot;collaborate&quot;</span>, <span class="at">detect =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb12-15"><a href="#cb12-15" tabindex="-1"></a>plan_pat <span class="ot">&lt;-</span> <span class="fu">set_role</span>(plan_pat, <span class="st">&quot;arm&quot;</span>, <span class="at">role =</span> <span class="st">&quot;treatment&quot;</span>)</span>
+<span id="cb12-16"><a href="#cb12-16" tabindex="-1"></a><span class="cf">for</span> (cn <span class="cf">in</span> <span class="fu">c</span>(<span class="st">&quot;time_rec&quot;</span>, <span class="st">&quot;status_rec&quot;</span>, <span class="st">&quot;time_death&quot;</span>, <span class="st">&quot;status_death&quot;</span>)) {</span>
+<span id="cb12-17"><a href="#cb12-17" tabindex="-1"></a>  plan_pat <span class="ot">&lt;-</span> <span class="fu">set_role</span>(plan_pat, cn, <span class="at">role =</span> <span class="st">&quot;outcome&quot;</span>, <span class="at">action =</span> <span class="st">&quot;scramble&quot;</span>)</span>
+<span id="cb12-18"><a href="#cb12-18" tabindex="-1"></a>}</span>
+<span id="cb12-19"><a href="#cb12-19" tabindex="-1"></a>m_pat <span class="ot">&lt;-</span> <span class="fu">mask</span>(</span>
+<span id="cb12-20"><a href="#cb12-20" tabindex="-1"></a>  patients, plan_pat, <span class="at">mode =</span> <span class="st">&quot;collaborate&quot;</span>, <span class="at">seed =</span> <span class="dv">1</span><span class="dt">L</span>,</span>
+<span id="cb12-21"><a href="#cb12-21" tabindex="-1"></a>  <span class="at">events =</span> <span class="fu">list</span>(<span class="at">time =</span> <span class="fu">c</span>(<span class="st">&quot;time_rec&quot;</span>, <span class="st">&quot;time_death&quot;</span>),</span>
+<span id="cb12-22"><a href="#cb12-22" tabindex="-1"></a>                <span class="at">status =</span> <span class="fu">c</span>(<span class="st">&quot;status_rec&quot;</span>, <span class="st">&quot;status_death&quot;</span>))</span>
+<span id="cb12-23"><a href="#cb12-23" tabindex="-1"></a>)</span>
+<span id="cb12-24"><a href="#cb12-24" tabindex="-1"></a>s_pat <span class="ot">&lt;-</span> <span class="fu">synthetic</span>(m_pat)</span>
+<span id="cb12-25"><a href="#cb12-25" tabindex="-1"></a><span class="fu">all</span>(s_pat<span class="sc">$</span>time_rec <span class="sc">&lt;=</span> s_pat<span class="sc">$</span>time_death)</span>
+<span id="cb12-26"><a href="#cb12-26" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
+<span id="cb12-27"><a href="#cb12-27" tabindex="-1"></a>pattern <span class="ot">&lt;-</span> <span class="cf">function</span>(d) <span class="fu">paste</span>(d<span class="sc">$</span>status_rec, d<span class="sc">$</span>status_death, <span class="at">sep =</span> <span class="st">&quot;/&quot;</span>)</span>
+<span id="cb12-28"><a href="#cb12-28" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(</span>
+<span id="cb12-29"><a href="#cb12-29" tabindex="-1"></a>  <span class="fu">data.frame</span>(</span>
+<span id="cb12-30"><a href="#cb12-30" tabindex="-1"></a>    <span class="at">pattern =</span> <span class="fu">names</span>(<span class="fu">table</span>(<span class="fu">pattern</span>(patients))),</span>
+<span id="cb12-31"><a href="#cb12-31" tabindex="-1"></a>    <span class="at">original =</span> <span class="fu">as.vector</span>(<span class="fu">table</span>(<span class="fu">pattern</span>(patients))),</span>
+<span id="cb12-32"><a href="#cb12-32" tabindex="-1"></a>    <span class="at">clone =</span> <span class="fu">as.vector</span>(<span class="fu">table</span>(<span class="fu">pattern</span>(s_pat)))</span>
+<span id="cb12-33"><a href="#cb12-33" tabindex="-1"></a>  ),</span>
+<span id="cb12-34"><a href="#cb12-34" tabindex="-1"></a>  <span class="at">caption =</span> <span class="st">&quot;Rows in each recurrence/death status pattern.&quot;</span></span>
+<span id="cb12-35"><a href="#cb12-35" tabindex="-1"></a>)</span></code></pre></div>
+<table>
+<caption>Rows in each recurrence/death status pattern.</caption>
+<thead>
+<tr class="header">
+<th align="left">pattern</th>
+<th align="right">original</th>
+<th align="right">clone</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">0/0</td>
+<td align="right">77</td>
+<td align="right">77</td>
+</tr>
+<tr class="even">
+<td align="left">0/1</td>
+<td align="right">82</td>
+<td align="right">82</td>
+</tr>
+<tr class="odd">
+<td align="left">1/0</td>
+<td align="right">93</td>
+<td align="right">93</td>
+</tr>
+<tr class="even">
+<td align="left">1/1</td>
+<td align="right">48</td>
+<td align="right">48</td>
+</tr>
+</tbody>
+</table>
+<p>Within each status pattern the gaps between events are re-simulated
+and summed back into times, so the times stay in order, a patient
+without a recurrence keeps both times equal, and the count of each
+pattern is exact. No final time runs past the longest follow-up observed
+in its pattern. The status patterns move across rows, within each arm
+when <code>conditional = TRUE</code>, so no real patient keeps their own
+outcome. No hazard model is fitted, and the clone keeps no relation
+between a covariate and the events.</p>
+</div>
+<div id="the-leakage-audit-and-a-refused-write" class="section level3">
+<h3>The leakage audit, and a refused write</h3>
+<p><code>audit_mask()</code> inspects the synthetic against the original
+and grades the leakage of each column. In collaborate mode it runs
+automatically and warns at <code>mask()</code> time. The fixture below
+is built to trip it: a PII-suspected column the user retains against the
+default, and a categorical covariate with a frequency-one level.</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>  <span class="at">rep =</span> <span class="fu">rep</span>(<span class="fu">seq_len</span>(<span class="dv">3</span><span class="dt">L</span>), <span class="at">each =</span> <span class="dv">20</span><span class="dt">L</span>),</span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>  <span class="at">variety =</span> <span class="fu">factor</span>(<span class="fu">rep</span>(<span class="fu">paste0</span>(<span class="st">&quot;V&quot;</span>, <span class="fu">seq_len</span>(<span class="dv">6</span><span class="dt">L</span>)), <span class="dv">10</span><span class="dt">L</span>)),</span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a>  <span class="at">contact_email =</span> <span class="fu">factor</span>(<span class="fu">rep</span>(<span class="fu">c</span>(<span class="st">&quot;a@x&quot;</span>, <span class="st">&quot;b@y&quot;</span>), <span class="dv">30</span><span class="dt">L</span>)),</span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a>  <span class="at">rare_treatment =</span> <span class="fu">factor</span>(<span class="fu">c</span>(</span>
+<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a>    <span class="st">&quot;only_one&quot;</span>,</span>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a>    <span class="fu">sample</span>(<span class="fu">c</span>(<span class="st">&quot;alpha&quot;</span>, <span class="st">&quot;beta&quot;</span>, <span class="st">&quot;gamma&quot;</span>), <span class="dv">59</span><span class="dt">L</span>, <span class="at">replace =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a>  )),</span>
+<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a>  <span class="at">yield =</span> <span class="fu">rnorm</span>(<span class="dv">60</span><span class="dt">L</span>, <span class="dv">5</span>, <span class="dv">1</span>),</span>
+<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a>  <span class="at">stringsAsFactors =</span> <span class="cn">FALSE</span></span>
+<span id="cb13-11"><a href="#cb13-11" tabindex="-1"></a>)</span>
+<span id="cb13-12"><a href="#cb13-12" tabindex="-1"></a></span>
+<span id="cb13-13"><a href="#cb13-13" tabindex="-1"></a>plan <span class="ot">&lt;-</span> <span class="fu">propose_roles</span>(df, <span class="at">mode =</span> <span class="st">&quot;collaborate&quot;</span>)</span>
+<span id="cb13-14"><a href="#cb13-14" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(</span>
+<span id="cb13-15"><a href="#cb13-15" tabindex="-1"></a>  plan[, <span class="fu">c</span>(<span class="st">&quot;col&quot;</span>, <span class="st">&quot;role&quot;</span>, <span class="st">&quot;action&quot;</span>, <span class="st">&quot;pii_suspected&quot;</span>)],</span>
+<span id="cb13-16"><a href="#cb13-16" tabindex="-1"></a>  <span class="at">caption =</span> <span class="fu">paste0</span>(</span>
+<span id="cb13-17"><a href="#cb13-17" tabindex="-1"></a>    <span class="st">&quot;The proposed plan: `contact_email` is auto-flagged &quot;</span>,</span>
+<span id="cb13-18"><a href="#cb13-18" tabindex="-1"></a>    <span class="st">&quot;`pii_suspected` and dropped.&quot;</span></span>
+<span id="cb13-19"><a href="#cb13-19" tabindex="-1"></a>  )</span>
+<span id="cb13-20"><a href="#cb13-20" tabindex="-1"></a>)</span></code></pre></div>
+<table>
+<caption>The proposed plan: <code>contact_email</code> is auto-flagged
+<code>pii_suspected</code> and dropped.</caption>
+<thead>
+<tr class="header">
+<th align="left">col</th>
+<th align="left">role</th>
+<th align="left">action</th>
+<th align="left">pii_suspected</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">rep</td>
+<td align="left">design</td>
+<td align="left">keep</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td align="left">variety</td>
+<td align="left">treatment</td>
+<td align="left">alias</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td align="left">contact_email</td>
+<td align="left">text</td>
+<td align="left">drop</td>
+<td align="left">TRUE</td>
+</tr>
+<tr class="even">
+<td align="left">rare_treatment</td>
+<td align="left">treatment</td>
+<td align="left">alias</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td align="left">yield</td>
+<td align="left">outcome</td>
+<td align="left">scramble</td>
+<td align="left">FALSE</td>
+</tr>
+</tbody>
+</table>
+<p>Suppose the custodian overrides the flag, keeps
+<code>contact_email</code>, and makes the rare column a covariate:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a>plan <span class="ot">&lt;-</span> <span class="fu">set_role</span>(plan, <span class="st">&quot;yield&quot;</span>, <span class="at">role =</span> <span class="st">&quot;outcome&quot;</span>)</span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a>plan <span class="ot">&lt;-</span> <span class="fu">set_role</span>(plan, <span class="st">&quot;contact_email&quot;</span>, <span class="at">role =</span> <span class="st">&quot;covariate&quot;</span>, <span class="at">action =</span> <span class="st">&quot;keep&quot;</span>)</span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a>plan <span class="ot">&lt;-</span> <span class="fu">set_role</span>(plan, <span class="st">&quot;rare_treatment&quot;</span>, <span class="at">role =</span> <span class="st">&quot;covariate&quot;</span>)</span>
+<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a>m <span class="ot">&lt;-</span> <span class="fu">mask</span>(df, plan, <span class="at">mode =</span> <span class="st">&quot;collaborate&quot;</span>, <span class="at">seed =</span> <span class="dv">1</span><span class="dt">L</span>)</span>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="co">#&gt; Warning: audit_mask() flagged HIGH leakage on columns: contact_email, rare_treatment</span></span>
+<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(</span>
+<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a>  <span class="fu">audit_mask</span>(m)[, <span class="fu">c</span>(<span class="st">&quot;col&quot;</span>, <span class="st">&quot;leakage_class&quot;</span>, <span class="st">&quot;notes&quot;</span>)],</span>
+<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a>  <span class="at">caption =</span> <span class="fu">paste0</span>(</span>
+<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a>    <span class="st">&quot;The mask-time audit: `contact_email` and `rare_treatment` both &quot;</span>,</span>
+<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a>    <span class="st">&quot;flag HIGH.&quot;</span></span>
+<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a>  )</span>
+<span id="cb14-12"><a href="#cb14-12" tabindex="-1"></a>)</span>
+<span id="cb14-13"><a href="#cb14-13" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb14-14"><a href="#cb14-14" tabindex="-1"></a><span class="co">#&gt; ── masque audit (mode = collaborate) ───────────────────────────────────────────────────────────────</span></span>
+<span id="cb14-15"><a href="#cb14-15" tabindex="-1"></a><span class="co">#&gt; • 2 HIGH, 0 medium, 3 low across 5 columns</span></span>
+<span id="cb14-16"><a href="#cb14-16" tabindex="-1"></a><span class="co">#&gt; • Rows with a globally unique NA pattern: 0.0%</span></span>
+<span id="cb14-17"><a href="#cb14-17" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb14-18"><a href="#cb14-18" tabindex="-1"></a><span class="co">#&gt; ── HIGH (2) ──</span></span>
+<span id="cb14-19"><a href="#cb14-19" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb14-20"><a href="#cb14-20" tabindex="-1"></a><span class="co">#&gt; ✖   covariate contact_email                     PII-pattern column name; kept as-is - visible to collaborators; same-row 100.0% vs chance 50.0%</span></span>
+<span id="cb14-21"><a href="#cb14-21" tabindex="-1"></a><span class="co">#&gt; ✖   covariate rare_treatment                    levels aliased; rare level (freq = 1)</span></span>
+<span id="cb14-22"><a href="#cb14-22" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb14-23"><a href="#cb14-23" tabindex="-1"></a><span class="co">#&gt; ── LOW (3) ──</span></span>
+<span id="cb14-24"><a href="#cb14-24" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb14-25"><a href="#cb14-25" tabindex="-1"></a><span class="co">#&gt; ℹ   design    rep                               exact-match 100.0%</span></span>
+<span id="cb14-26"><a href="#cb14-26" tabindex="-1"></a><span class="co">#&gt; ℹ   treatment variety                           levels aliased</span></span>
+<span id="cb14-27"><a href="#cb14-27" tabindex="-1"></a><span class="co">#&gt; ℹ   outcome   yield                             ok</span></span>
+<span id="cb14-28"><a href="#cb14-28" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb14-29"><a href="#cb14-29" tabindex="-1"></a><span class="co">#&gt; ── Table-level checks ──</span></span>
+<span id="cb14-30"><a href="#cb14-30" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb14-31"><a href="#cb14-31" tabindex="-1"></a><span class="co">#&gt; ℹ   LOW       same-row joint match 0.0% vs chance 0.1% (sd 1.7)</span></span>
+<span id="cb14-32"><a href="#cb14-32" tabindex="-1"></a><span class="co">#&gt; ℹ   LOW       whole-row match 0.0% vs chance 0.5% (sd 1.7)</span></span></code></pre></div>
+<table>
+<caption>The mask-time audit: <code>contact_email</code> and
+<code>rare_treatment</code> both flag HIGH.</caption>
+<colgroup>
+<col width="12%" />
+<col width="11%" />
+<col width="76%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">col</th>
+<th align="left">leakage_class</th>
+<th align="left">notes</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">rep</td>
+<td align="left">low</td>
+<td align="left">exact-match 100.0%</td>
+</tr>
+<tr class="even">
+<td align="left">variety</td>
+<td align="left">low</td>
+<td align="left">levels aliased</td>
+</tr>
+<tr class="odd">
+<td align="left">contact_email</td>
+<td align="left">high</td>
+<td align="left">PII-pattern column name; kept as-is - visible to
+collaborators; same-row 100.0% vs chance 50.0%</td>
+</tr>
+<tr class="even">
+<td align="left">rare_treatment</td>
+<td align="left">high</td>
+<td align="left">levels aliased; rare level (freq = 1)</td>
+</tr>
+<tr class="odd">
+<td align="left">yield</td>
+<td align="left">low</td>
+<td align="left">ok</td>
+</tr>
+</tbody>
+</table>
+<p><code>contact_email</code> (real values kept across the trust
+boundary) and <code>rare_treatment</code> (a frequency-one level) are
+flagged. <code>mask()</code> raised a classed
+<code>masque_high_leakage</code> warning above and recorded the findings
+in <code>recipe@warnings</code>; the guided <code>masque()</code> flow
+never silences it. While a HIGH finding stands, the package will not
+write the synthetic to disk:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a>out_dir <span class="ot">&lt;-</span> <span class="fu">tempfile</span>()</span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a><span class="fu">masque</span>(df, <span class="at">roles =</span> plan, <span class="at">out =</span> out_dir, <span class="at">mode =</span> <span class="st">&quot;collaborate&quot;</span>, <span class="at">seed =</span> <span class="dv">1</span><span class="dt">L</span>,</span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a>       <span class="at">quiet =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a><span class="co">#&gt; Warning: audit_mask() flagged HIGH leakage on columns: contact_email, rare_treatment</span></span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a><span class="co">#&gt; Error in `.gate_release()`:</span></span>
+<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a><span class="co">#&gt; ! Write blocked: the audit flagged HIGH leakage on 2 findings.</span></span>
+<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a><span class="co">#&gt; ✖ Flagged: contact_email, rare_treatment.</span></span>
+<span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a><span class="co">#&gt; ℹ Re-role, alias, or drop each flagged column, then mask again.</span></span>
+<span id="cb15-9"><a href="#cb15-9" tabindex="-1"></a><span class="co">#&gt; ℹ Or pass `allow_high = TRUE` to write anyway after your own review - the override is recorded.</span></span>
+<span id="cb15-10"><a href="#cb15-10" tabindex="-1"></a><span class="fu">dir.exists</span>(out_dir)</span>
+<span id="cb15-11"><a href="#cb15-11" tabindex="-1"></a><span class="co">#&gt; [1] FALSE</span></span></code></pre></div>
+<p>Nothing is written: the refusal fires before the writer touches disk,
+the two flagged columns are named in the message, and the remedy is
+spelled out (re-role, alias, or drop the column, then mask again). A
+custodian who has reviewed the findings and still wants to proceed can
+pass <code>allow_high = TRUE</code>; the override is itself raised as a
+classed <code>masque_high_override</code> warning and recorded in the
+recipe’s warnings, so the exception stays auditable rather than
+silent.</p>
+<p>The audit also checks the table as a whole. Each column is graded on
+how far its row-by-row match with the original exceeds what chance
+gives, and <code>attr(audit, &quot;joint&quot;)</code> holds table-level checks:
+rows whose every re-simulated column equals the original, and rare
+combinations of retained values. A HIGH table-level finding blocks the
+writers as a column finding does.</p>
+<p>An outcome left at <code>keep</code> in collaborate mode hands over
+the real responses, so it audits HIGH:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a>trial_kept <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a>  <span class="at">block =</span> <span class="fu">factor</span>(<span class="fu">rep</span>(<span class="fu">seq_len</span>(<span class="dv">4</span><span class="dt">L</span>), <span class="at">each =</span> <span class="dv">6</span><span class="dt">L</span>)),</span>
+<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a>  <span class="at">variety =</span> <span class="fu">factor</span>(<span class="fu">rep</span>(<span class="fu">sprintf</span>(<span class="st">&quot;V%d&quot;</span>, <span class="fu">seq_len</span>(<span class="dv">6</span><span class="dt">L</span>)), <span class="dv">4</span><span class="dt">L</span>)),</span>
+<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a>  <span class="at">height =</span> <span class="fu">round</span>(<span class="fu">rnorm</span>(<span class="dv">24</span><span class="dt">L</span>, <span class="dv">90</span>, <span class="dv">8</span>)),</span>
+<span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a>  <span class="at">yield =</span> <span class="fu">round</span>(<span class="fu">rnorm</span>(<span class="dv">24</span><span class="dt">L</span>, <span class="dv">5</span>, <span class="dv">1</span>), <span class="dv">2</span>)</span>
+<span id="cb16-6"><a href="#cb16-6" tabindex="-1"></a>)</span>
+<span id="cb16-7"><a href="#cb16-7" tabindex="-1"></a>plan_kept <span class="ot">&lt;-</span> <span class="fu">propose_roles</span>(trial_kept, <span class="at">mode =</span> <span class="st">&quot;collaborate&quot;</span>)</span>
+<span id="cb16-8"><a href="#cb16-8" tabindex="-1"></a>plan_kept <span class="ot">&lt;-</span> <span class="fu">set_role</span>(plan_kept, <span class="st">&quot;yield&quot;</span>, <span class="at">role =</span> <span class="st">&quot;outcome&quot;</span>, <span class="at">action =</span> <span class="st">&quot;keep&quot;</span>)</span>
+<span id="cb16-9"><a href="#cb16-9" tabindex="-1"></a>m_kept <span class="ot">&lt;-</span> <span class="fu">mask</span>(trial_kept, plan_kept, <span class="at">mode =</span> <span class="st">&quot;collaborate&quot;</span>, <span class="at">seed =</span> <span class="dv">1</span><span class="dt">L</span>)</span>
+<span id="cb16-10"><a href="#cb16-10" tabindex="-1"></a><span class="co">#&gt; Warning: audit_mask() flagged HIGH leakage on column: yield</span></span>
+<span id="cb16-11"><a href="#cb16-11" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(</span>
+<span id="cb16-12"><a href="#cb16-12" tabindex="-1"></a>  <span class="fu">audit_mask</span>(m_kept, <span class="at">print =</span> <span class="cn">FALSE</span>)[col <span class="sc">==</span> <span class="st">&quot;yield&quot;</span>, <span class="fu">c</span>(<span class="st">&quot;col&quot;</span>, <span class="st">&quot;leakage_class&quot;</span>)],</span>
+<span id="cb16-13"><a href="#cb16-13" tabindex="-1"></a>  <span class="at">caption =</span> <span class="st">&quot;A kept outcome in a collaborate clone.&quot;</span></span>
+<span id="cb16-14"><a href="#cb16-14" tabindex="-1"></a>)</span></code></pre></div>
+<table>
+<caption>A kept outcome in a collaborate clone.</caption>
+<thead>
+<tr class="header">
+<th align="left">col</th>
+<th align="left">leakage_class</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">yield</td>
+<td align="left">high</td>
+</tr>
+</tbody>
+</table>
+<p>If the custodian has decided the real outcome may be shared, passing
+<code>allow_kept_outcome = TRUE</code> grades the column medium and
+records the choice on the recipe:</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a>m_allowed <span class="ot">&lt;-</span> <span class="fu">mask</span>(trial_kept, plan_kept, <span class="at">mode =</span> <span class="st">&quot;collaborate&quot;</span>, <span class="at">seed =</span> <span class="dv">1</span><span class="dt">L</span>,</span>
+<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a>                  <span class="at">allow_kept_outcome =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(</span>
+<span id="cb17-4"><a href="#cb17-4" tabindex="-1"></a>  <span class="fu">audit_mask</span>(m_allowed, <span class="at">print =</span> <span class="cn">FALSE</span>)[</span>
+<span id="cb17-5"><a href="#cb17-5" tabindex="-1"></a>    col <span class="sc">==</span> <span class="st">&quot;yield&quot;</span>, <span class="fu">c</span>(<span class="st">&quot;col&quot;</span>, <span class="st">&quot;leakage_class&quot;</span>)</span>
+<span id="cb17-6"><a href="#cb17-6" tabindex="-1"></a>  ],</span>
+<span id="cb17-7"><a href="#cb17-7" tabindex="-1"></a>  <span class="at">caption =</span> <span class="st">&quot;The same outcome, allowed by the custodian.&quot;</span></span>
+<span id="cb17-8"><a href="#cb17-8" tabindex="-1"></a>)</span></code></pre></div>
+<table>
+<caption>The same outcome, allowed by the custodian.</caption>
+<thead>
+<tr class="header">
+<th align="left">col</th>
+<th align="left">leakage_class</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">yield</td>
+<td align="left">medium</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a><span class="fu">recipe</span>(m_allowed)<span class="sc">@</span>allow_kept_outcome</span>
+<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
+<p>The table-level checks still apply. When the kept outcome is the only
+column that would otherwise be re-simulated, the clone matches the
+original row for row, the whole-row check stays HIGH, and the writers
+stay blocked.</p>
+</div>
+<div id="small-tables" class="section level3">
+<h3>Small tables</h3>
+<p>Re-simulating a column of a few rows returns the original values in a
+new order. Collaborate mode therefore refuses a table of fewer than five
+rows when any column would be re-simulated:</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a>tiny <span class="ot">&lt;-</span> trial_kept[<span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>, <span class="fu">c</span>(<span class="st">&quot;block&quot;</span>, <span class="st">&quot;yield&quot;</span>)]</span>
+<span id="cb19-2"><a href="#cb19-2" tabindex="-1"></a><span class="fu">mask</span>(tiny, <span class="fu">propose_roles</span>(tiny, <span class="at">mode =</span> <span class="st">&quot;collaborate&quot;</span>), <span class="at">mode =</span> <span class="st">&quot;collaborate&quot;</span>,</span>
+<span id="cb19-3"><a href="#cb19-3" tabindex="-1"></a>     <span class="at">seed =</span> <span class="dv">1</span><span class="dt">L</span>)</span>
+<span id="cb19-4"><a href="#cb19-4" tabindex="-1"></a><span class="co">#&gt; Error in `.check_row_floor()`:</span></span>
+<span id="cb19-5"><a href="#cb19-5" tabindex="-1"></a><span class="co">#&gt; ! `df` has 4 rows, fewer than 5, and yield would be re-simulated.</span></span>
+<span id="cb19-6"><a href="#cb19-6" tabindex="-1"></a><span class="co">#&gt; ✖ A re-simulated column this short is the original values resampled, so a collaborate clone would</span></span>
+<span id="cb19-7"><a href="#cb19-7" tabindex="-1"></a><span class="co">#&gt;   disclose them.</span></span>
+<span id="cb19-8"><a href="#cb19-8" tabindex="-1"></a><span class="co">#&gt; ℹ Keep, alias or drop that column, or mask a table of at least 5 rows.</span></span></code></pre></div>
+<p>Local mode warns instead. Kept, aliased and dropped columns are not
+re-simulated, so a short lookup table of site codes masks in either
+mode. Five rows is a floor, not a guarantee. A column of a few dozen
+rows still carries values close to the real ones, and jitter within a
+measurement step does little to hide them. The same applies to small
+strata of a conditional clone, which is why its cells hold at least five
+rows.</p>
+<p>Beyond that gate the release decision stays with the custodian.
+Whether a synthetic table is appropriate for a given collaborator,
+environment, or jurisdiction depends on context the package cannot see.
+<code>masque</code> informs that decision. It does not make it.</p>
+</div>
+<div id="multi-table-sets" class="section level3">
+<h3>Multi-table sets</h3>
+<p>When several tables share a key, <code>mask_set()</code> aliases that
+key <em>identically across all of them</em> so the synthetic tables
+still join. A linked key is the join surface, aliased consistently
+rather than permuted (permuting a key would break the join regardless of
+masking).</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a>set_dir <span class="ot">&lt;-</span> <span class="fu">system.file</span>(<span class="st">&quot;extdata&quot;</span>, <span class="st">&quot;met_set&quot;</span>, <span class="at">package =</span> <span class="st">&quot;masque&quot;</span>)</span>
+<span id="cb20-2"><a href="#cb20-2" tabindex="-1"></a>tabs <span class="ot">&lt;-</span> <span class="fu">read_set</span>(set_dir)</span>
+<span id="cb20-3"><a href="#cb20-3" tabindex="-1"></a>tabs<span class="sc">$</span>agronomy[, year <span class="sc">:=</span> <span class="fu">factor</span>(year)]</span>
+<span id="cb20-4"><a href="#cb20-4" tabindex="-1"></a>ms <span class="ot">&lt;-</span> <span class="fu">mask_set</span>(tabs, <span class="at">mode =</span> <span class="st">&quot;collaborate&quot;</span>, <span class="at">seed =</span> <span class="dv">1</span><span class="dt">L</span>, <span class="at">quiet =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb20-5"><a href="#cb20-5" tabindex="-1"></a>ag <span class="ot">&lt;-</span> <span class="fu">synthetic</span>(ms)<span class="sc">$</span>agronomy</span>
+<span id="cb20-6"><a href="#cb20-6" tabindex="-1"></a>qa <span class="ot">&lt;-</span> <span class="fu">synthetic</span>(ms)<span class="sc">$</span>quality</span>
+<span id="cb20-7"><a href="#cb20-7" tabindex="-1"></a>join_survives <span class="ot">&lt;-</span> <span class="fu">setequal</span>(<span class="fu">unique</span>(ag<span class="sc">$</span>gen), <span class="fu">unique</span>(qa<span class="sc">$</span>gen))</span>
+<span id="cb20-8"><a href="#cb20-8" tabindex="-1"></a>join_survives</span>
+<span id="cb20-9"><a href="#cb20-9" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
+<span id="cb20-10"><a href="#cb20-10" tabindex="-1"></a><span class="fu">head</span>(<span class="fu">unique</span>(ag<span class="sc">$</span>gen), <span class="dv">3</span><span class="dt">L</span>)</span>
+<span id="cb20-11"><a href="#cb20-11" tabindex="-1"></a><span class="co">#&gt; [1] &quot;gen_K056&quot; &quot;gen_K048&quot; &quot;gen_K017&quot;</span></span></code></pre></div>
+<p><code>year</code> is converted to a factor first. As a number it
+would be kept with its real values, with a warning, because a numeric
+environment column cannot be aliased. A linked key gets aliases of the
+form <code>&lt;col&gt;_K001</code>, such as <code>gen_K001</code>, from
+one map shared by every table.</p>
+<p>The recipe bundle is private exactly as a single recipe is;
+<code>write_set()</code> never writes it. <code>save_recipe()</code> and
+<code>read_recipe()</code> keep it as one <code>.rds</code> file,
+<code>audit_mask(ms)</code> returns one audit per table, and
+<code>reveal_maps(recipe(ms), table = &quot;agronomy&quot;)</code> reveals the
+maps of one table.</p>
+</div>
+<div id="geographic-coordinates" class="section level3">
+<h3>Geographic coordinates</h3>
+<p>Latitude and longitude are treated as sensitive:
+<code>propose_roles()</code> flags a column whose name looks like a
+coordinate (<code>gps</code>, <code>lat</code>/<code>latitude</code>,
+<code>lon</code>/<code>longitude</code>) as <code>pii_suspected</code>
+and proposes <code>drop</code>. Dropping is the safest choice when the
+synthetic does not need locations.</p>
+<p><strong>A coordinate is masked unless told otherwise.</strong> If a
+column whose name says coordinate would be written through with
+<code>action = &quot;keep&quot;</code>, the call stops. There are three ways to
+say what happens to it:</p>
+<ol style="list-style-type: decimal">
+<li>Declare the pair to <code>coords</code>, which coarsens it.</li>
+<li>Give the column <code>drop</code> or <code>scramble</code>, which
+masks it.</li>
+<li>Pass <code>allow_unmasked_coords = TRUE</code> after deciding the
+position is not sensitive. The recipe records this, so the decision is
+visible later.</li>
+</ol>
+<p>A column that looks like a coordinate only by the shape of its values
+raises a warning instead of stopping, because that detection is a guess
+and a false positive should not block a legitimate mask.</p>
+<p>When the synthetic does need plausible coordinates, to exercise a
+spatial pipeline say, a plain scramble is the wrong tool: the copula
+re-simulates each axis and smears a latitude/longitude pair into a
+continuous cloud that can land in the sea. <code>masque</code> offers
+two purpose-built alternatives.</p>
+<p><code>jitter_coordinates()</code> coarsens coordinates in place by a
+geographic-masking jitter. The default donut scheme displaces every
+point by a random distance drawn uniformly by area from an annulus, in a
+random direction, and re-draws until the point falls on land, so a
+coastal site is never pushed offshore. The longitude step is corrected
+by <code>cos(latitude)</code> so the ground distance matches the
+requested kilometres at any latitude, and the NA pattern and the
+latitude/longitude pairing are preserved.</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a>sites <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb21-2"><a href="#cb21-2" tabindex="-1"></a>  <span class="at">site =</span> <span class="fu">c</span>(<span class="st">&quot;A&quot;</span>, <span class="st">&quot;B&quot;</span>, <span class="st">&quot;C&quot;</span>),</span>
+<span id="cb21-3"><a href="#cb21-3" tabindex="-1"></a>  <span class="at">lat  =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">34.9</span>, <span class="sc">-</span><span class="fl">35.2</span>, <span class="sc">-</span><span class="fl">33.6</span>),</span>
+<span id="cb21-4"><a href="#cb21-4" tabindex="-1"></a>  <span class="at">lon  =</span> <span class="fu">c</span>(<span class="fl">138.6</span>, <span class="fl">142.0</span>, <span class="fl">148.2</span>)</span>
+<span id="cb21-5"><a href="#cb21-5" tabindex="-1"></a>)</span>
+<span id="cb21-6"><a href="#cb21-6" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(</span>
+<span id="cb21-7"><a href="#cb21-7" tabindex="-1"></a>  <span class="fu">jitter_coordinates</span>(sites, <span class="st">&quot;lat&quot;</span>, <span class="st">&quot;lon&quot;</span>, <span class="at">min_km =</span> <span class="dv">5</span>, <span class="at">max_km =</span> <span class="dv">20</span>, <span class="at">seed =</span> <span class="dv">1</span><span class="dt">L</span>),</span>
+<span id="cb21-8"><a href="#cb21-8" tabindex="-1"></a>  <span class="at">digits =</span> <span class="dv">4</span>,</span>
+<span id="cb21-9"><a href="#cb21-9" tabindex="-1"></a>  <span class="at">caption =</span> <span class="fu">paste0</span>(</span>
+<span id="cb21-10"><a href="#cb21-10" tabindex="-1"></a>    <span class="st">&quot;Three sites, each displaced 5-20 km in a random direction and &quot;</span>,</span>
+<span id="cb21-11"><a href="#cb21-11" tabindex="-1"></a>    <span class="st">&quot;re-drawn until on land.&quot;</span></span>
+<span id="cb21-12"><a href="#cb21-12" tabindex="-1"></a>  )</span>
+<span id="cb21-13"><a href="#cb21-13" tabindex="-1"></a>)</span></code></pre></div>
+<table>
+<caption>Three sites, each displaced 5-20 km in a random direction and
+re-drawn until on land.</caption>
+<thead>
+<tr class="header">
+<th align="left">site</th>
+<th align="right">lat</th>
+<th align="right">lon</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">A</td>
+<td align="right">-34.8160</td>
+<td align="right">138.5333</td>
+</tr>
+<tr class="even">
+<td align="left">B</td>
+<td align="right">-35.1656</td>
+<td align="right">142.1346</td>
+</tr>
+<tr class="odd">
+<td align="left">C</td>
+<td align="right">-33.4883</td>
+<td align="right">148.1005</td>
+</tr>
+</tbody>
+</table>
+<p><strong>A coordinate belongs to a site, not to a row.</strong> One
+displacement is drawn per site and broadcast to every row of that site,
+so a table holding many rows per physical place (plots within a trial,
+samples within a paddock) comes back with one masked coordinate per
+place, exactly as the source table has one true coordinate per place. By
+default a site is a set of rows sharing an identical input coordinate,
+which needs no user action and cannot alter genuinely point-level data.
+Where a site’s recorded coordinates differ slightly between rows, naming
+the site columns consolidates the group to its centroid.</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" tabindex="-1"></a>plots <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb22-2"><a href="#cb22-2" tabindex="-1"></a>  <span class="at">trial =</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="st">&quot;T1&quot;</span>, <span class="st">&quot;T2&quot;</span>), <span class="at">each =</span> <span class="dv">4</span><span class="dt">L</span>),</span>
+<span id="cb22-3"><a href="#cb22-3" tabindex="-1"></a>  <span class="at">lat   =</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="sc">-</span><span class="fl">34.9</span>, <span class="sc">-</span><span class="fl">35.2</span>), <span class="at">each =</span> <span class="dv">4</span><span class="dt">L</span>),</span>
+<span id="cb22-4"><a href="#cb22-4" tabindex="-1"></a>  <span class="at">lon   =</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="fl">138.6</span>, <span class="fl">142.0</span>), <span class="at">each =</span> <span class="dv">4</span><span class="dt">L</span>)</span>
+<span id="cb22-5"><a href="#cb22-5" tabindex="-1"></a>)</span>
+<span id="cb22-6"><a href="#cb22-6" tabindex="-1"></a>masked <span class="ot">&lt;-</span> <span class="fu">jitter_coordinates</span>(plots, <span class="st">&quot;lat&quot;</span>, <span class="st">&quot;lon&quot;</span>, <span class="at">by =</span> <span class="st">&quot;trial&quot;</span>, <span class="at">seed =</span> <span class="dv">1</span><span class="dt">L</span>)</span>
+<span id="cb22-7"><a href="#cb22-7" tabindex="-1"></a>one_coord_per_trial <span class="ot">&lt;-</span> <span class="fu">nrow</span>(<span class="fu">unique</span>(masked[<span class="fu">c</span>(<span class="st">&quot;lat&quot;</span>, <span class="st">&quot;lon&quot;</span>)]))</span>
+<span id="cb22-8"><a href="#cb22-8" tabindex="-1"></a>one_coord_per_trial</span>
+<span id="cb22-9"><a href="#cb22-9" tabindex="-1"></a><span class="co">#&gt; [1] 2</span></span></code></pre></div>
+<p>Grouping is a confidentiality control, not only a fidelity one. Donut
+displacement is isotropic, so the mean of many independent draws around
+one true site converges on that site. Displacing a 360-row trial row by
+row leaves its centroid a median 0.58 km from the truth, against the 5
+km floor the donut was asked for. One draw per site removes that
+estimator and leaves the full displacement in place. The unit has to be
+chosen carefully: it is the finest grouping denoting one physical place
+at one time, so for a multi-year trial series it is location by year
+rather than location alone, because trials at one named location in
+different seasons legitimately sit in different paddocks.</p>
+<p>A site that cannot be placed on land within <code>max_tries</code>
+re-draws is set to <code>NA</code> on both axes, with a warning.
+<code>masque</code> does not emit a true coordinate inside a table the
+caller believes is masked.</p>
+<p>Declaring the pair to <code>mask()</code> applies the same coarsening
+as part of masking, so the coordinates never pass through the
+copula:</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" tabindex="-1"></a>plan <span class="ot">&lt;-</span> <span class="fu">set_role</span>(plan, <span class="fu">c</span>(<span class="st">&quot;GPS_S&quot;</span>, <span class="st">&quot;GPS_E&quot;</span>), <span class="at">action =</span> <span class="st">&quot;keep&quot;</span>)</span>
+<span id="cb23-2"><a href="#cb23-2" tabindex="-1"></a>m <span class="ot">&lt;-</span> <span class="fu">mask</span>(df, plan, <span class="at">mode =</span> <span class="st">&quot;collaborate&quot;</span>,</span>
+<span id="cb23-3"><a href="#cb23-3" tabindex="-1"></a>          <span class="at">coords =</span> <span class="fu">list</span>(<span class="fu">list</span>(<span class="at">lat =</span> <span class="st">&quot;GPS_S&quot;</span>, <span class="at">lon =</span> <span class="st">&quot;GPS_E&quot;</span>, <span class="at">by =</span> <span class="st">&quot;TRIAL&quot;</span>)),</span>
+<span id="cb23-4"><a href="#cb23-4" tabindex="-1"></a>          <span class="at">seed =</span> <span class="dv">1</span><span class="dt">L</span>)</span></code></pre></div>
+<p>The recipe records the grouping each declared pair was masked under,
+so a clone carries the account of its own coordinate structure. A
+coordinate declared to <code>coords</code> is retained in the synthetic,
+so <code>audit_mask()</code> reports it as <em>medium</em>, noting that
+the column was coarsened in place. A coordinate kept with its real
+values would be HIGH.</p>
+<p><code>synthesise_geospatial()</code> is the alternative when it is
+preferable to re-anchor points around fake centroids supplied for each
+region.</p>
+<p><strong>How far to displace.</strong> The right magnitude is not a
+constant. It is calibrated to the density of the entities being
+protected, so that the masked point is spatially k-anonymous: roughly,
+at least <em>k</em> comparable entities lie closer to the masked point
+than the true one (Hampton et al., 2010). Individual-level urban health
+data is typically masked with a standard deviation of about one
+kilometre, because cities are dense. Fields and farms are far sparser,
+so comparable protection needs a much larger displacement; a donut of
+roughly 5 to 20 km (the default) moves a point across several properties
+while keeping it in the same agroclimatic region (Zandbergen, 2014). A
+formal guarantee needs the radii calibrated to the local field density
+rather than the default.</p>
+</div>
+</div>
+<div id="results" class="section level2">
+<h2>Results</h2>
+<p>Aliasing a design column hides the site names and keeps the layout.
+The alias map hides which label is which, but not how often each
+occurs.</p>
+<p>The default clone keeps the pooled mean and SD of yield but loses the
+treatment effect (0.25 against a true 4.99), and a pipeline that checks
+only marginal fidelity would not notice. The conditional clone keeps it
+(5.14). Neither keeps a non-monotone relationship between two numeric
+columns.</p>
+<p>A column constant within a trial stays constant within it, and linked
+event times stay in order with exact pattern counts.</p>
+<p>The audit caught both planted problems and the write was refused:
+<code>dir.exists(out_dir)</code> is FALSE. A kept outcome audits HIGH
+unless the custodian allows it, and a collaborate table of fewer than
+five rows is refused. Linked tables share one alias map for their key,
+so they still join.</p>
+<p>A synthetic clone therefore protects the labels and the raw values
+behind them. It does not hide the design footprint or the level
+frequencies, and without <code>conditional = TRUE</code> it does not
+keep a treatment effect. A column whose sensitivity was set wrongly is
+caught by the audit before anything is written.</p>
+</div>
+<div id="limits" class="section level2">
+<h2>Limits</h2>
+<p>Everything demonstrated here is a development safeguard, not a
+disclosure-control guarantee in the formal sense. The alias map raises
+the cost of a public-vocabulary attack, but a bijection preserves level
+frequencies. A determined attacker with strong side information about
+frequencies and structure is not stopped by an alias alone. The Gaussian
+copula keeps only monotone association, so a pipeline whose core
+modelling step is non-linear should be validated on the original data
+through the recipe. The donut jitter’s k-anonymity property is a rule of
+thumb tied to entity density, not a certified guarantee, and the right
+radius for a given dataset needs to be chosen with that density in mind
+rather than left at the package default. The leakage audit reads what
+the mask-time comparison can see (flagged names, frequency-one levels,
+retained coordinates). It cannot detect a disclosure risk that depends
+on information outside the table, such as an outside dataset an attacker
+might already hold. These limits are part of the method.</p>
+</div>
+<div id="what-to-read-next" class="section level2">
+<h2>What to read next</h2>
+<p><em>Getting started with masque</em> covers the custodian’s side of a
+first masking run: <code>masque()</code>, the roles-and-actions plan,
+and multi-environment detection. <em>Recipe anatomy and the
+round-trip</em> is the analyst’s side: what the recipe stores and how a
+pipeline built on the synthetic re-targets to the original.</p>
+</div>
+<div id="reproduce" class="section level2">
+<h2>Reproduce</h2>
+<p><code>set.seed(1)</code> is set once for the whole document; the
+conditional-clone fixture reseeds explicitly with
+<code>set.seed(42)</code> and the copula-shape fixture with
+<code>set.seed(7)</code>, so both sections are self-contained regardless
+of chunk execution order. The grain fixture reseeds with
+<code>set.seed(3)</code> and the events fixture with
+<code>set.seed(5)</code>. Every
+<code>mask()</code>/<code>mask_set()</code>/<code>jitter_coordinates()</code>
+call also passes <code>seed = 1L</code> explicitly. Package versions
+follow.</p>
+<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span>
+<span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a><span class="co">#&gt; R version 4.6.1 (2026-06-24)</span></span>
+<span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a><span class="co">#&gt; Platform: aarch64-apple-darwin23</span></span>
+<span id="cb24-4"><a href="#cb24-4" tabindex="-1"></a><span class="co">#&gt; Running under: macOS Tahoe 26.7.1</span></span>
+<span id="cb24-5"><a href="#cb24-5" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb24-6"><a href="#cb24-6" tabindex="-1"></a><span class="co">#&gt; Matrix products: default</span></span>
+<span id="cb24-7"><a href="#cb24-7" tabindex="-1"></a><span class="co">#&gt; BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRblas.0.dylib </span></span>
+<span id="cb24-8"><a href="#cb24-8" tabindex="-1"></a><span class="co">#&gt; LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1</span></span>
+<span id="cb24-9"><a href="#cb24-9" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb24-10"><a href="#cb24-10" tabindex="-1"></a><span class="co">#&gt; locale:</span></span>
+<span id="cb24-11"><a href="#cb24-11" tabindex="-1"></a><span class="co">#&gt; [1] C/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8</span></span>
+<span id="cb24-12"><a href="#cb24-12" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb24-13"><a href="#cb24-13" tabindex="-1"></a><span class="co">#&gt; time zone: Australia/Adelaide</span></span>
+<span id="cb24-14"><a href="#cb24-14" tabindex="-1"></a><span class="co">#&gt; tzcode source: internal</span></span>
+<span id="cb24-15"><a href="#cb24-15" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb24-16"><a href="#cb24-16" tabindex="-1"></a><span class="co">#&gt; attached base packages:</span></span>
+<span id="cb24-17"><a href="#cb24-17" tabindex="-1"></a><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     </span></span>
+<span id="cb24-18"><a href="#cb24-18" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb24-19"><a href="#cb24-19" tabindex="-1"></a><span class="co">#&gt; other attached packages:</span></span>
+<span id="cb24-20"><a href="#cb24-20" tabindex="-1"></a><span class="co">#&gt; [1] masque_0.16.0</span></span>
+<span id="cb24-21"><a href="#cb24-21" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb24-22"><a href="#cb24-22" tabindex="-1"></a><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
+<span id="cb24-23"><a href="#cb24-23" tabindex="-1"></a><span class="co">#&gt;  [1] vctrs_0.7.3         cli_3.6.6           knitr_1.51          rlang_1.3.0        </span></span>
+<span id="cb24-24"><a href="#cb24-24" tabindex="-1"></a><span class="co">#&gt;  [5] xfun_0.60           otel_0.2.0          generics_0.1.4      S7_0.2.2           </span></span>
+<span id="cb24-25"><a href="#cb24-25" tabindex="-1"></a><span class="co">#&gt;  [9] jsonlite_2.0.0      data.table_1.18.6.1 labeling_0.4.3      glue_1.8.1         </span></span>
+<span id="cb24-26"><a href="#cb24-26" tabindex="-1"></a><span class="co">#&gt; [13] htmltools_0.5.9     sass_0.4.10         scales_1.4.0        rmarkdown_2.32     </span></span>
+<span id="cb24-27"><a href="#cb24-27" tabindex="-1"></a><span class="co">#&gt; [17] grid_4.6.1          tibble_3.3.1        evaluate_1.0.5      jquerylib_0.1.4    </span></span>
+<span id="cb24-28"><a href="#cb24-28" tabindex="-1"></a><span class="co">#&gt; [21] fastmap_1.2.0       yaml_2.3.12         lifecycle_1.0.5     compiler_4.6.1     </span></span>
+<span id="cb24-29"><a href="#cb24-29" tabindex="-1"></a><span class="co">#&gt; [25] dplyr_1.2.1         RColorBrewer_1.1-3  pkgconfig_2.0.3     maps_3.4.3         </span></span>
+<span id="cb24-30"><a href="#cb24-30" tabindex="-1"></a><span class="co">#&gt; [29] farver_2.1.2        digest_0.6.39       viridisLite_0.4.3   R6_2.6.1           </span></span>
+<span id="cb24-31"><a href="#cb24-31" tabindex="-1"></a><span class="co">#&gt; [33] tidyselect_1.2.1    dichromat_2.0-1     pillar_1.11.1       magrittr_2.0.5     </span></span>
+<span id="cb24-32"><a href="#cb24-32" tabindex="-1"></a><span class="co">#&gt; [37] bslib_0.12.0        tools_4.6.1         withr_3.0.3         gtable_0.3.6       </span></span>
+<span id="cb24-33"><a href="#cb24-33" tabindex="-1"></a><span class="co">#&gt; [41] ggplot2_4.0.3       cachem_1.1.0</span></span></code></pre></div>
+</div>
+<div id="references" class="section level2">
+<h2>References</h2>
+<p>Hampton, K. H., Fitch, M. K., Allshouse, W. B., Doherty, I. A.,
+Gesink, D. C., Leone, P. A., Serre, M. L., &amp; Miller, W. C. (2010).
+Mapping health data: improved privacy protection with donut method
+geomasking. <em>American Journal of Epidemiology, 172</em>(9),
+1062-1069. <a href="https://doi.org/10.1093/aje/kwq248" class="uri">https://doi.org/10.1093/aje/kwq248</a></p>
+<p>Zandbergen, P. A. (2014). Ensuring confidentiality of geocoded health
+data: assessing geographic masking strategies for individual-level data.
+<em>Advances in Medicine, 2014</em>, 567049. <a href="https://doi.org/10.1155/2014/567049" class="uri">https://doi.org/10.1155/2014/567049</a></p>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

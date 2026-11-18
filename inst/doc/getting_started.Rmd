@@ -1,0 +1,462 @@
+---
+title: "Getting started with masque"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting started with masque}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+<!-- Render time: ~2 s under rmarkdown::render(); macOS arm64, R 4.5.2, one
+     core. No sampler runs in this vignette, so the time is dominated by
+     knitr overhead and the small copula fits. -->
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 4.5,
+  dpi = 150
+)
+old_options <- options(width = 100)
+set.seed(1)
+```
+
+```{r library}
+library(masque)
+```
+
+## Why
+
+A field agronomist has a confidential 72-plot trial and wants an outside
+statistician to build a spatial yield model on it, without the statistician
+seeing the real plot layout or genotype identities. This vignette shows the
+agronomist's side of that handoff on the John and Williams (1995)
+alpha-design trial shipped with the package.
+
+The synthetic table `masque` produces is a development surrogate for one
+named collaborator. It is not an anonymised dataset and is not safe for
+public release. *Confidentiality and the threat model* sets out what is and
+is not protected; read it before sharing any output.
+
+## What
+
+`masque()` is the main function. Point it at a table, or a folder or
+workbook of related tables, and it reads the data, proposes a masking
+plan and masks. In an interactive session it pauses first so the
+custodian can review the plan.
+
+The output of `masque()` is always a pair: the *synthetic* clone, the only
+part that crosses the trust boundary, and a private `masque_recipe` (see
+`recipe()`) that never leaves the custodian's machine. The recipe is what
+lets a pipeline written against the synthetic re-target to the original
+later with no code change; its internals and the round-trip verbs are the
+subject of *Recipe anatomy and the round-trip*.
+
+Every column in the masking plan has a `role` and an `action`, proposed by
+`propose_roles()` and changed with `set_role()`. The role says what the
+column is: `design`, `treatment`, `outcome`, `covariate`, `date`, `id`,
+`text` or `other`. The action says what happens to it:
+
+* `keep` passes it through unchanged;
+* `scramble` re-simulates numerics through a Gaussian copula and shuffles
+  categories and dates between rows. For a treatment it swaps the labels
+  among the levels, so the allocation is unchanged;
+* `alias` replaces the labels with opaque codes (a categorical covariate
+  is shuffled between rows first);
+* `drop` leaves it out.
+
+`role_options()` lists every role and action pair the package accepts.
+
+The `mode` argument sets the defaults for both axes at once:
+
+* `local` is for the custodian's own development and keeps labels intact.
+* `collaborate` is for handing the synthetic to someone else. It aliases
+  treatment and categorical labels, jitters numerics, drops identifiers and
+  free text (a character column in which more than half the values are
+  distinct), and runs the leakage audit.
+
+A per-column `action` always overrides the mode's default.
+
+## Example
+
+### The one-call path
+
+```{r one-call}
+f <- system.file("extdata", "john_alpha.csv", package = "masque")
+df <- read.csv(f, stringsAsFactors = TRUE)
+knitr::kable(
+  head(df),
+  caption = "The first six plots of the alpha-design trial."
+)
+
+m <- masque(df, mode = "collaborate", seed = 1L, ask = FALSE)
+```
+
+`ask = FALSE` skips the interactive review, which is what a vignette
+needs; in an interactive console, `masque(df)` shows the proposed plan and
+a prompt to proceed, edit, or stop. The message above is the summary
+`masque()` prints for every guided run: how many columns were masked, in
+which mode, and the leakage-audit tally.
+
+The result carries the synthetic data and the private recipe:
+
+```{r one-call-extract}
+synth <- synthetic(m)
+knitr::kable(
+  head(synth),
+  caption = paste0(
+    "The first six plots of the synthetic clone: `gen` is aliased, ",
+    "`yield` is re-simulated."
+  )
+)
+```
+
+### The masking plan: roles and actions
+
+Under the one-call path, `masque()` built the roles table without asking.
+Building and reviewing it directly gives full control:
+
+```{r plan}
+plan <- propose_roles(df, mode = "collaborate")
+knitr::kable(
+  plan[, c("col", "role", "action", "kind")],
+  caption = paste0(
+    "The proposed masking plan for the alpha-design trial ",
+    "(collaborate mode)."
+  )
+)
+```
+
+`propose_roles()` fills in a sensible action for each column given the
+mode, so the table reviewed here is the plan that will run. `yield` was
+proposed as the trial's `outcome` from its name. The role records intent,
+and the *conditional* clone (see *Confidentiality and the threat model*)
+reads it to find the response. Any role can be changed with `set_role()`.
+Here the plot number is re-roled as an identifier, which collaborate mode
+drops:
+
+```{r set-role}
+plan_id <- set_role(plan, "plot", role = "id")
+knitr::kable(
+  plan_id[, c("col", "role", "action")],
+  caption = "The plan after re-roling `plot` as an identifier."
+)
+```
+
+Re-assigning a role re-resolves the default action; passing an explicit
+`action` pins the column instead. There is no requirement to name an
+outcome: with none marked, every scrambled numeric is re-simulated jointly.
+
+### Editing the plan as code
+
+The plan is a data.table, so you can edit it in code. The spreadsheet the
+guided prompt opens when the custodian chooses `e` edits the same table.
+`set_role()` is vectorised over columns:
+
+```{r edit-vectorised}
+r2 <- set_role(plan, c("row", "col"), action = "drop")
+```
+
+Direct edits work too. A direct `role` edit leaves `action` untouched, so
+setting the action back to `NA` tells `mask()` to re-resolve the default
+for the new role:
+
+```{r edit-direct}
+r2[col == "rep", `:=`(role = "covariate", action = NA_character_)]
+knitr::kable(
+  r2[, c("col", "role", "action")],
+  caption = paste0(
+    "A hand-edited plan: `row`/`col` dropped, `rep` re-roled to a ",
+    "covariate."
+  )
+)
+```
+
+The `kind` column comes from the column's class and cannot be edited. If
+it is wrong, convert the column in the data and run `propose_roles()`
+again.
+
+`role_options()` lists the pairs the package accepts, here for a factor
+column:
+
+```{r role-options}
+knitr::kable(
+  role_options(kind = "factor"),
+  caption = paste0(
+    "Every (role, action) pair the validator accepts for a factor ",
+    "column."
+  )
+)
+```
+
+Finally, `pii_suspected`. `propose_roles()` sets it from the column
+*name* (`email`, `phone`, `owner`, ...), and the leakage audit treats a
+flagged column that survives into the synthetic as a HIGH finding. The
+scan reads names, not content, so when a harmlessly named column holds
+sensitive values, flagging it by hand is the correct fix:
+
+```{r pii-by-hand, eval = FALSE}
+plan[col == "comments", pii_suspected := TRUE]
+```
+
+Passing the edited table back to `mask()` (or to `masque(df, roles =
+plan)`) runs the plan:
+
+```{r mask}
+m <- mask(df, plan, mode = "collaborate", seed = 1L)
+synth <- synthetic(m)
+byte_identical_plot <- identical(synth$plot, df$plot)
+gen_levels_changed <- !setequal(levels(synth$gen), levels(df$gen))
+byte_identical_plot
+gen_levels_changed
+head(levels(synth$gen))
+```
+
+### A plan the package refuses
+
+`plot` is a `design` column. Scrambling it would break the trial's layout,
+and `mask()` refuses:
+
+```{r fail-closed, error = TRUE}
+bad_plan <- set_role(plan, "plot", role = "design", action = "scramble")
+mask(df, bad_plan, mode = "collaborate", seed = 1L)
+```
+
+The call stops before any masking, names the column and the combination at
+fault, and lists the three actions that do work for a design column
+(`keep`, `alias`, `drop`). The same check runs whether the plan came from
+`propose_roles()`, a hand edit or the guided spreadsheet.
+
+### More than one table
+
+A confidential dataset often arrives as several related files or a
+multi-sheet workbook. `masque()` handles those too. Point it at a
+folder, an `.xlsx` file, or a named list of tables and it masks every
+table at once, aliasing any shared key (a site code, a genotype name)
+*identically across tables* so a join of the synthetic tables still
+resolves.
+
+```{r set}
+set_dir <- system.file("extdata", "met_set", package = "masque")
+ms <- masque(set_dir, mode = "collaborate", seed = 1L, ask = FALSE)
+ms
+```
+
+The genotype column `gen` appears in both tables and is masked to the same
+codes in each, so the field and laboratory tables still join.
+
+The warning is about `year`. It is an environment column, but it is
+numeric, so collaborate mode keeps its real values. To alias it, read the
+tables, convert `year` to a factor, and mask the list:
+
+```{r set-year}
+tabs <- read_set(set_dir)
+tabs$agronomy[, year := factor(year)]
+ms <- masque(tabs, mode = "collaborate", seed = 1L, ask = FALSE, quiet = TRUE)
+knitr::kable(
+  head(synthetic(ms)$agronomy[, c("env", "loc", "year", "gen")], 3L),
+  caption = "The first rows of the clone, with `year` now aliased."
+)
+```
+
+For a workbook, `sheets =` picks which sheets to read, and `info =` names
+documentation sheets, such as a data dictionary, to set aside: they are
+not masked and not written. See *Confidentiality and the threat model* for
+the set-level controls.
+
+### Describing the clone: the data card
+
+A collaborator planning an analysis needs to know the shape of the data
+before any code is written: how many rows, which columns are the design,
+which is the outcome, how much is missing. `data_card()` writes those
+facts down without a single value of any column. It reads only the clone
+and its role table, which `roles()` returns in the clone's own column
+names:
+
+```{r data-card-roles}
+knitr::kable(
+  roles(m),
+  caption = "The role table of the clone, as the data card reads it."
+)
+```
+
+The role table says which columns are design columns, but not which of
+them give a plot's position or identify the plot. The custodian names
+those when writing the card:
+
+```{r data-card}
+card_file <- tempfile(fileext = ".yaml")
+card <- data_card(
+  m,
+  file = card_file,
+  name = "alpha_trial",
+  spatial = c("row", "col"),
+  unit = "plot"
+)
+writeLines(head(readLines(card_file), 30))
+```
+
+Every count carries a provenance class. `structure` marks a count that is
+exact in the clone and so equal on the real table, such as the number of
+missing values or the number of genotypes. `clone_estimate` marks one
+that was re-simulated, such as the number of distinct yields. `analyst`
+marks what was named in the call. Level labels never appear: the card
+says there are 24 genotypes and does not list them. When column names
+are aliased, the card uses the aliases. For a set, `data_card(ms)`
+returns one card per table, and `data_card(ms, file = dir)` writes one
+file per table.
+
+### Multi-environment structure
+
+For a multi-environment trial, `detect_design()` answers three questions
+separately:
+
+1. Which rows belong to each environment?
+2. Do the treatments connect the environments, so that they can be
+   compared?
+3. What randomisation structure can be recovered within each environment?
+
+A block or field layout seen in the data suggests the original
+randomisation but does not confirm it. A small toy with two environments
+and three genotypes:
+
+```{r met-scope}
+met <- expand.grid(
+  env = factor(c("E1", "E2")),
+  rep = factor(seq_len(2L)),
+  gen = factor(c("G1", "G2", "G3"))
+)
+met$yield <- seq_len(nrow(met)) + rep(c(0, 2), each = 6L)
+
+ds <- detect_design(met)
+ds@scope_label
+ds@env_cols
+ds@connectivity$status
+ds@within_design_label
+```
+
+Automatic detection is conservative. A column named `env` or
+`environment`, or a common site-year pattern, is taken as the environment
+only when no other column explains the structure as well. A site column on
+its own is taken only when treatments are replicated across sites, so a
+nested block is not mistaken for an environment. When you know the
+environment columns, name them:
+
+```{r met-explicit}
+ds_explicit <- detect_design(met, env = "env")
+```
+
+### Figure: the multi-environment coverage plot
+
+`plot()` on a design summary, or `plot_design_summary()`, draws a compact
+environment overview in base graphics. With `engine = "ggplot2"` it
+returns a `ggplot2` object you can save with `ggplot2::ggsave()`; printed,
+it is the figure below. It
+shows whether coverage is even across environments, which the
+connectivity flag alone does not.
+
+```{r met-plot, eval = requireNamespace("ggplot2", quietly = TRUE), fig.cap = "Genotypes observed per environment (E1, E2) for the toy multi-environment trial; the subtitle carries connectivity status, component count, and the recovered within-environment design."}
+plot(ds_explicit, df = met, engine = "ggplot2")
+```
+
+```{r met-plot-skip, eval = !requireNamespace("ggplot2", quietly = TRUE), echo = FALSE, results = "asis"}
+cat("ggplot2 is not installed on this build, so the coverage figure is",
+    "skipped; `plot(ds_explicit, df = met)` still draws the base-graphics",
+    "equivalent.\n")
+```
+
+Both bars are at three treatments, since every genotype in this toy trial
+appears in both environments. A shorter bar, or a subtitle reporting more
+than one component, marks environments that cannot go into one connected
+analysis until you have checked whether the missing coverage is real or an
+artefact of how the table was put together.
+
+High-confidence environment columns feed the masking plan directly:
+
+* Local mode keeps environment values byte-identical.
+* Collaborate mode aliases categorical environment labels in place, so
+  each row stays in its environment and missing values stay where they
+  were. The recipe turns the aliases back into the real labels.
+
+A numeric environment, such as year, stays at `keep` and raises a
+disclosure warning because its values are still visible. The toy's `env`
+column is categorical:
+
+
+```{r met-roles}
+met_roles <- propose_roles(met, mode = "collaborate")
+knitr::kable(
+  met_roles[met_roles$col == "env", c("col", "role", "action")],
+  caption = "How the masking plan treats the `env` column."
+)
+```
+
+This safeguard protects the allocation a pipeline reads. It does not imply
+that the synthesised outcomes preserve genotype-by-environment effects:
+sparse treatment-by-environment cells may fall back to pooled synthesis,
+and the clone must not be used as a substitute for the original trial in
+scientific inference.
+
+## Results
+
+```{r audit-tally, include = FALSE}
+audit <- audit_mask(m, print = FALSE)
+grades <- c(audit$leakage_class, attr(audit, "joint")$leakage_class)
+n_high <- sum(grades == "high")
+n_medium <- sum(grades == "medium")
+```
+
+On this trial the audit, counting its column and table-level checks
+together, gave `r n_high` HIGH and `r n_medium` medium findings. A HIGH
+finding would stop the package writing the synthetic to disk. A design column left at `keep` comes back unchanged
+and an aliased treatment comes back as `trt_001` to `trt_024`; a plan that
+asks for something the package cannot do is refused before it runs. Related
+tables are masked together and still join.
+
+The agronomist can therefore hand over a clone that keeps the plot layout
+and the links between tables, with the genotype labels aliased, and the
+statistician can build a full pipeline on it without seeing the real
+genotype names. How the finished pipeline runs
+on the real data is covered in *Recipe anatomy and the round-trip*.
+
+## Limits
+
+This vignette shows the custodian's side of the handoff, on one small
+public trial with a clean, complete design; it does not exercise the
+leakage audit's failure modes, the geographic-coordinate controls, or the
+conditional clone that preserves a treatment effect rather than only a
+marginal distribution, all of which live in *Confidentiality and the
+threat model*. A sensitive column with an ordinary name is caught only if
+someone flags it by hand. Multi-environment detection can miss a real
+environment when the names and replication are ambiguous; prefer an
+explicit `env` whenever you know better. Only one numeric column is
+re-simulated here, so the vignette does not show what the Gaussian copula
+keeps of the relationships between columns; that is also in
+*Confidentiality and the threat model*.
+
+## What to read next
+
+*Confidentiality and the threat model* sets out exactly what a synthetic
+clone protects and what it does not, the depth controls beyond role and
+action, the leakage audit, and the conditional clone that preserves a
+treatment-to-outcome relationship. *Recipe anatomy and the round-trip*
+is the analyst's side of this handoff: what the recipe carries, and how a
+pipeline built on the synthetic re-targets to the original. *What a
+conditional clone keeps of the design* tests what a model fitted on a
+conditional clone still finds, on eight field designs.
+
+## Reproduce
+
+`set.seed(1)` is set once for the document, and every `masque()` or
+`mask()` call passes `seed = 1L`, so each is reproducible on its own.
+Package versions follow.
+
+```{r session-info}
+sessionInfo()
+```
+
+```{r reset-options, include = FALSE}
+options(old_options)
+```
